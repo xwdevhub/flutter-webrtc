@@ -1,0 +1,1 @@
+../../common/darwin/Classes/ScreenCapture/XWI420Frame.m
