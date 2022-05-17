@@ -5,6 +5,8 @@
 #import "FlutterRTCDesktopCapturer.h"
 #import "FlutterRTCVideoRenderer.h"
 #import "AudioUtils.h"
+//添加共享采集处理文件
+#import "XWRTCScreenStream.h"
 
 #import <AVFoundation/AVFoundation.h>
 #import <WebRTC/WebRTC.h>
@@ -69,6 +71,8 @@
         _eventChannel = eventChannel;
 #if TARGET_OS_IPHONE
         self.viewController = viewController;
+        ///屏幕共享监听
+        [self addScreenShareBroadcastNotification];
 #endif
     }
     //RTCSetMinDebugLogLevel(RTCLoggingSeverityVerbose);
@@ -179,7 +183,11 @@
     } else if ([@"getDisplayMedia" isEqualToString:call.method]) {
         NSDictionary* argsMap = call.arguments;
         NSDictionary* constraints = argsMap[@"constraints"];
+#if TARGET_OS_IPHONE
+        [self getDisplayScreenMedia:constraints result:result];
+#else
         [self getDisplayMedia:constraints result:result];
+#endif
     } else if ([@"createLocalMediaStream" isEqualToString:call.method]) {
         [self createLocalMediaStream:result];
     } else if ([@"getSources" isEqualToString:call.method]) {
