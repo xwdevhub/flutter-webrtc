@@ -4,6 +4,8 @@
 #import "FlutterRTCDataChannel.h"
 #import "FlutterRTCVideoRenderer.h"
 #import "AudioUtils.h"
+//添加共享采集处理文件
+#import "XWRTCScreenStream.h"
 
 #import <AVFoundation/AVFoundation.h>
 #import <WebRTC/WebRTC.h>
@@ -60,6 +62,8 @@
         _speakerOn = NO;
 #if TARGET_OS_IPHONE
         self.viewController = viewController;
+        ///屏幕共享监听
+        [self addScreenShareBroadcastNotification];
 #endif
     }
     //RTCSetMinDebugLogLevel(RTCLoggingSeverityVerbose);
@@ -143,7 +147,7 @@
 #if TARGET_OS_IPHONE
         NSDictionary* argsMap = call.arguments;
         NSDictionary* constraints = argsMap[@"constraints"];
-        [self getDisplayMedia:constraints result:result];
+        [self getDisplayScreenMedia:constraints result:result];
 #else
         result(FlutterMethodNotImplemented);
 #endif
