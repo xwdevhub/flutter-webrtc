@@ -143,10 +143,15 @@ static void NotificationCallback(CFNotificationCenterRef center,
     NSString *streamId     = self.streamId;
     RTCMediaStream *stream = self.localStreams[streamId];
     if (stream) {
+        NSMutableArray *removeTracks = [NSMutableArray array];
         for (RTCVideoTrack *track in stream.videoTracks) {
+            [removeTracks addObject:track];
             [self.localTracks removeObjectForKey:track.trackId];
         }
         [self.localStreams removeObjectForKey:streamId];
+        for (RTCVideoTrack *track in removeTracks) {
+            [stream removeVideoTrack:track];
+        }
     }
 }
 
