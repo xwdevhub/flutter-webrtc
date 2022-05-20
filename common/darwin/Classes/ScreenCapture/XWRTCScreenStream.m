@@ -61,8 +61,7 @@ static const NSString *kIdentifier = @"identifier";
     
     [screenCapturer startCapture];
     
-    //TODO:
-    self.videoCapturer = screenCapturer;
+    self.screenCapturer = screenCapturer;
     
     self.result = result;
 }
@@ -116,7 +115,7 @@ static void NotificationCallback(CFNotificationCenterRef center,
 
 - (void)startScreenShare {
     RTCVideoSource *videoSource = [self.peerConnectionFactory videoSource];
-    self.videoCapturer.delegate = videoSource;
+    self.screenCapturer.delegate = videoSource;
     NSString *mediaStreamId     = [[NSUUID UUID] UUIDString];
     self.streamId = mediaStreamId;
     RTCMediaStream *mediaStream = [self.peerConnectionFactory mediaStreamWithStreamId:mediaStreamId];

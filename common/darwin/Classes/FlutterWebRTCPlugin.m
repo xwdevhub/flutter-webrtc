@@ -369,12 +369,19 @@
                 [self.localTracks removeObjectForKey:track.trackId];
                 RTCVideoTrack *videoTrack = (RTCVideoTrack *)track;
                 RTCVideoSource *source = videoTrack.source;
-                if(source){
+                if(source == self.videoCapturer.delegate){
                     shouldCallResult = NO;
                     [self.videoCapturer stopCaptureWithCompletionHandler:^{
                       result(nil);
                     }];
                     self.videoCapturer = nil;
+                } else if (source == self.screenCapturer.delegate) {
+                  if (self.screenCapturer) {
+                    [self.screenCapturer stopCaptureWithCompletionHandler:^{
+                      result(nil);
+                    }];
+                    self.screenCapturer = nil;
+                  }
                 }
             }
             for (RTCAudioTrack *track in stream.audioTracks) {
