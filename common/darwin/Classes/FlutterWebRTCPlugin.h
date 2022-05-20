@@ -7,6 +7,10 @@
 #import <Foundation/Foundation.h>
 #import <WebRTC/WebRTC.h>
 
+#if TARGET_OS_IPHONE
+#import "FlutterRPScreenRecorder.h"
+#endif
+
 @class FlutterRTCVideoRenderer;
 @class FlutterRTCFrameCapturer;
 
@@ -34,6 +38,9 @@ typedef void (^CapturerStopHandler)(CompletionHandler handler);
 @property (nonatomic, strong) FlutterEventSink eventSink;
 @property (nonatomic, strong) NSObject<FlutterBinaryMessenger>* messenger;
 @property (nonatomic, strong) RTCCameraVideoCapturer *videoCapturer;
+#if TARGET_OS_IPHONE
+@property (nonatomic, strong) FlutterRPScreenRecorder *screenCapturer;
+#endif
 @property (nonatomic, strong) FlutterRTCFrameCapturer *frameCapturer;
 @property (nonatomic, strong) AVAudioSessionPort preferredInput;
 @property (nonatomic) BOOL _usingFrontCamera;

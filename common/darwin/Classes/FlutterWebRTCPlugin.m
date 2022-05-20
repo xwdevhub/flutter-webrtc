@@ -413,15 +413,33 @@
             for (RTCVideoTrack *track in stream.videoTracks) {
                 [self.localTracks removeObjectForKey:track.trackId];
                 RTCVideoTrack *videoTrack = (RTCVideoTrack *)track;
+#if TARGET_OS_IPHONE
+                RTCVideoSource *source = videoTrack.source;
+                if (source == self.videoCapturer.delegate) {
+                    shouldCallResult = NO;
+                    [self.videoCapturer stopCaptureWithCompletionHandler:^{
+                        result(nil);
+                    }];
+                    self.videoCapturer = nil;
+                } else if (source == self.screenCapturer.delegate) {
+                    if (self.screenCapturer) {
+                        [self.screenCapturer stopCaptureWithCompletionHandler:^{
+                            result(nil);
+                        }];
+                        self.screenCapturer = nil;
+                    }
+                }
+#else
                 CapturerStopHandler stopHandler = self.videoCapturerStopHandlers[videoTrack.trackId];
-                if(stopHandler) {
+                if (stopHandler) {
                     shouldCallResult = NO;
                     stopHandler(^{
-                          NSLog(@"video capturer stopped, trackID = %@", videoTrack.trackId);
-                          result(nil);
-                        });
+                        NSLog(@"video capturer stopped, trackID = %@", videoTrack.trackId);
+                        result(nil);
+                    });
                     [self.videoCapturerStopHandlers removeObjectForKey:videoTrack.trackId];
                 }
+#endif
             }
             for (RTCAudioTrack *track in stream.audioTracks) {
                 [self.localTracks removeObjectForKey:track.trackId];
