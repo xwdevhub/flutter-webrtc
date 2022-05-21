@@ -7,7 +7,6 @@
 
 //See: https://developer.apple.com/videos/play/wwdc2017/606/
 
-static NSString * _Nonnull kAppGroup = @"group.com.xanway.weilink.ScreenReplay"; //!< 需要替换成自己的App Group
 static void *KVOContext = &KVOContext;
 
 static CFStringRef TScreenShareHostRequestStopNotification = (__bridge CFStringRef)@"TScreenShareHostRequestStopNotification";
@@ -35,8 +34,14 @@ static CFStringRef TScreenShareHostRequestStopNotification = (__bridge CFStringR
 }
 
 - (void)setupUserDefaults {
+    NSString *path = [[NSBundle mainBundle] pathForResource:@"ScreenReplay" ofType:@"entitlements"];
+    NSDictionary *dict = [NSDictionary dictionaryWithContentsOfFile:path];
+    NSString *groupID = [dict[@"com.apple.security.application-groups"] firstObject];
+    if (groupID == nil) {
+        groupID = @"group.com.xanway.weilink.ScreenReplay";
+    }
     // 通过UserDefaults建立数据通道，接收Extension传递来的视频帧
-    self.userDefaults = [[NSUserDefaults alloc] initWithSuiteName:kAppGroup];
+    self.userDefaults = [[NSUserDefaults alloc] initWithSuiteName:groupID];
     [self.userDefaults addObserver:self forKeyPath:@"frame" options:NSKeyValueObservingOptionNew context:KVOContext];
 }
 
@@ -46,6 +51,7 @@ static CFStringRef TScreenShareHostRequestStopNotification = (__bridge CFStringR
         if (!_userDefaults) {
             [self setupUserDefaults];
         }
+        [_userDefaults setObject:@"gortc" forKey:@"requester"];
     }
 }
 
