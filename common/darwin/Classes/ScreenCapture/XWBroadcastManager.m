@@ -34,7 +34,13 @@ static dispatch_once_t onceToken;
             if (!self.picker) {
                 self.picker                       = [[RPSystemBroadcastPickerView alloc] initWithFrame:CGRectZero];
                 self.picker.showsMicrophoneButton = NO;
-                self.picker.preferredExtension    = @"com.xanway.distribute.screenReplay";
+                NSString *path = [[NSBundle mainBundle] pathForResource:@"resource" ofType:@"plist"];
+                NSDictionary *resource = [NSDictionary dictionaryWithContentsOfFile:path];
+                NSString *preferredExtension = resource[@"share_extension_bundle_id"];
+                if (preferredExtension == nil) {
+                    preferredExtension = @"com.xanway.distribute.screenReplay";
+                }
+                self.picker.preferredExtension    = preferredExtension;
                 for (NSObject *subView in self.picker.subviews) {
                     if ([subView isKindOfClass:[UIButton class]]) {
                         self.button = (UIButton *)subView;
