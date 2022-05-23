@@ -732,9 +732,11 @@ class GetUserMediaImpl {
                 info.capturer.dispose();
                 mVideoCapturers.remove(id);
                 SurfaceTextureHelper helper = mSurfaceTextureHelpers.get(id);
-                helper.stopListening();
-                helper.dispose();
-                mSurfaceTextureHelpers.remove(id);
+                if (helper != null)  {
+                    helper.stopListening();
+                    helper.dispose();
+                    mSurfaceTextureHelpers.remove(id);
+                }
             }
         }
     }
