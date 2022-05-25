@@ -7,6 +7,10 @@
 
 //See: https://developer.apple.com/videos/play/wwdc2017/606/
 
+static const int DEFAULT_WIDTH = 1280;
+static const int DEFAULT_HEIGHT = 720;
+static const int DEFAULT_FPS = 30;
+
 static void *KVOContext = &KVOContext;
 
 static CFStringRef TScreenShareHostRequestStopNotification = (__bridge CFStringRef)@"TScreenShareHostRequestStopNotification";
@@ -14,6 +18,8 @@ static CFStringRef TScreenShareHostRequestStopNotification = (__bridge CFStringR
 @interface FlutterRPScreenRecorder ()
 
 @property (nonatomic, strong) NSUserDefaults *userDefaults;
+
+@property (nonatomic, strong) NSDictionary *videoConstraints;
 
 @end
 
@@ -46,11 +52,24 @@ static CFStringRef TScreenShareHostRequestStopNotification = (__bridge CFStringR
 }
 
 - (void)startCapture {
+  [self startCaptureWithConstraints:nil];
+}
+
+- (void)startCaptureWithConstraints:(NSDictionary *)constraints {
     if (@available(iOS 12.0, *)) {
         [[XWBroadcastManager shareInstance].button sendActionsForControlEvents:UIControlEventAllTouchEvents];
         if (!_userDefaults) {
             [self setupUserDefaults];
         }
+        NSDictionary *videoConstraints = constraints[@"video"];
+        NSNumber *width = videoConstraints[@"width"] != nil ? videoConstraints[@"width"] : @(DEFAULT_WIDTH);
+        NSNumber *height = videoConstraints[@"height"] != nil ? videoConstraints[@"height"] : @(DEFAULT_HEIGHT);
+        NSNumber *fps = videoConstraints[@"fps"] != nil ? videoConstraints[@"fps"] : @(DEFAULT_FPS);
+        _videoConstraints = @{
+            @"width" : width,
+            @"height" : height,
+            @"fps" : fps
+        };
         [_userDefaults setObject:@"gortc" forKey:@"requester"];
     }
 }
@@ -73,11 +92,14 @@ static CFStringRef TScreenShareHostRequestStopNotification = (__bridge CFStringR
         XWI420Frame *frame = [XWI420Frame initWithData:i420Frame[@"data"]];
         CVPixelBufferRef pixelBuffer = [XWYUVConverter i420FrameToPixelBuffer:frame];
         
-        size_t width = CVPixelBufferGetWidth(pixelBuffer);
-        size_t height = CVPixelBufferGetHeight(pixelBuffer);
+//        size_t width = CVPixelBufferGetWidth(pixelBuffer);
+//        size_t height = CVPixelBufferGetHeight(pixelBuffer);
 
-        [source adaptOutputFormatToWidth:(int)(width/2) height:(int)(height/2) fps:8];
-       
+        int width = [_videoConstraints[@"width"] intValue];
+        int height = [_videoConstraints[@"height"] intValue];
+        int fps = [_videoConstraints[@"fps"] intValue];
+        [source adaptOutputFormatToWidth:width height:height fps:fps];
+
         RTCCVPixelBuffer *rtcPixelBuffer = [[RTCCVPixelBuffer alloc] initWithPixelBuffer:pixelBuffer];
         RTCVideoFrame *videoFrame = [[RTCVideoFrame alloc] initWithBuffer:rtcPixelBuffer
                                                                  rotation:RTCVideoRotation_0
