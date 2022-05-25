@@ -59,7 +59,7 @@ static const NSString *kIdentifier = @"identifier";
     
     FlutterRPScreenRecorder *screenCapturer = [[FlutterRPScreenRecorder alloc] init];
     
-    [screenCapturer startCapture];
+    [screenCapturer startCaptureWithConstraints:constraints];
     
     self.screenCapturer = screenCapturer;
     
