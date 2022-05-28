@@ -26,6 +26,7 @@ static const NSString *kIdentifier = @"identifier";
 @property (nonatomic, copy) FlutterResult result;
 
 @property (nonatomic, copy) NSString *streamId;
+@property (nonatomic, strong) NSDictionary *constraints;
 
 @end
 
@@ -56,13 +57,14 @@ static const NSString *kIdentifier = @"identifier";
 
 - (void)getDisplayScreenMedia:(NSDictionary *)constraints
                        result:(FlutterResult)result {
-    
-    FlutterRPScreenRecorder *screenCapturer = [[FlutterRPScreenRecorder alloc] init];
-    
-    [screenCapturer startCaptureWithConstraints:constraints];
+    RTCVideoSource *videoSource = [self.peerConnectionFactory videoSource];
+    FlutterRPScreenRecorder *screenCapturer = [[FlutterRPScreenRecorder alloc] initWithDelegate:videoSource];
+    [screenCapturer setConstraints:constraints];
+  
+    [screenCapturer startCapture];
     
     self.screenCapturer = screenCapturer;
-    
+    self.constraints = constraints;
     self.result = result;
 }
 
@@ -114,24 +116,28 @@ static void NotificationCallback(CFNotificationCenterRef center,
 }
 
 - (void)startScreenShare {
-    RTCVideoSource *videoSource = [self.peerConnectionFactory videoSource];
-    self.screenCapturer.delegate = videoSource;
-    NSString *mediaStreamId     = [[NSUUID UUID] UUIDString];
+    if (self.screenCapturer == nil) {
+        RTCVideoSource *videoSource = [self.peerConnectionFactory videoSource];
+        FlutterRPScreenRecorder *screenCapturer = [[FlutterRPScreenRecorder alloc] initWithDelegate:videoSource];
+        [screenCapturer setConstraints:self.constraints];
+        self.screenCapturer = screenCapturer;
+    }
+    NSString *mediaStreamId = [[NSUUID UUID] UUIDString];
     self.streamId = mediaStreamId;
     RTCMediaStream *mediaStream = [self.peerConnectionFactory mediaStreamWithStreamId:mediaStreamId];
-    
-    NSString *trackUUID       = [[NSUUID UUID] UUIDString];
-    RTCVideoTrack *videoTrack = [self.peerConnectionFactory videoTrackWithSource:videoSource trackId:trackUUID];
+
+    NSString *trackUUID = [[NSUUID UUID] UUIDString];
+    RTCVideoTrack *videoTrack = [self.peerConnectionFactory videoTrackWithSource:self.screenCapturer.delegate trackId:trackUUID];
     [mediaStream addVideoTrack:videoTrack];
-    
+
     NSMutableArray *audioTracks = [NSMutableArray array];
     NSMutableArray *videoTracks = [NSMutableArray array];
-    
+
     for (RTCVideoTrack *track in mediaStream.videoTracks) {
         [self.localTracks setObject:track forKey:track.trackId];
         [videoTracks addObject:@{@"id" : track.trackId, @"kind" : track.kind, @"label" : track.trackId, @"enabled" : @(track.isEnabled), @"remote" : @(YES), @"readyState" : @"live"}];
     }
-    
+
     self.localStreams[mediaStreamId] = mediaStream;
     if (self.result) {
         self.result(@{@"streamId" : mediaStreamId, @"audioTracks" : audioTracks, @"videoTracks" : videoTracks});
@@ -169,6 +175,14 @@ static void NotificationCallback(CFNotificationCenterRef center,
 
 - (void)setStreamId:(NSString *)streamId {
     objc_setAssociatedObject(self, @selector(streamId), streamId, OBJC_ASSOCIATION_COPY_NONATOMIC);
+}
+
+- (NSDictionary *)constraints {
+    return objc_getAssociatedObject(self, @selector(constraints));
+}
+
+- (void)setConstraints:(NSDictionary *)constraints {
+    objc_setAssociatedObject(self, @selector(constraints), constraints, OBJC_ASSOCIATION_RETAIN_NONATOMIC);
 }
 
 #endif
