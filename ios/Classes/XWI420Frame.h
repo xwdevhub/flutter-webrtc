@@ -1,1 +1,0 @@
-../../common/darwin/Classes/ScreenCapture/XWI420Frame.h

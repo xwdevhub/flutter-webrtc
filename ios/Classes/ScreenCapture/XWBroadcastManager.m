@@ -36,7 +36,7 @@ static dispatch_once_t onceToken;
                 self.picker.showsMicrophoneButton = NO;
                 NSString *path = [[NSBundle mainBundle] pathForResource:@"resource" ofType:@"plist"];
                 NSDictionary *resource = [NSDictionary dictionaryWithContentsOfFile:path];
-                NSString *preferredExtension = resource[@"share_extension_bundle_id"];
+                NSString *preferredExtension = resource[@"screen_replay_extension_bundle_id"];
                 if (preferredExtension == nil) {
                     preferredExtension = @"com.xanway.distribute.screenReplay";
                 }

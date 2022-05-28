@@ -4,12 +4,12 @@
 
 - (void)startCapture;
 
-- (void)startCaptureWithConstraints:(nullable NSDictionary *)constraints;
-
 // Stops the capture session asynchronously and notifies callback on completion.
 - (void)stopCaptureWithCompletionHandler:(nullable void (^)(void))completionHandler;
 
 -(void)stopCapture;
+
+- (void)setConstraints:(nonnull NSDictionary *)constraints;
 
 @end
 #endif
