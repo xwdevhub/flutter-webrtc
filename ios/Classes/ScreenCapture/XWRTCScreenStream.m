@@ -75,19 +75,18 @@ static const NSString *kIdentifier = @"identifier";
     if ([identifier isEqualToString:TScreenShareBroadcastStartedNotification]) {
         NSLog(@"onBroadcastStarted");
         [self startScreenShare];
-        
+        [self closeSystemPresention];
     } else if ([identifier isEqualToString:TScreenShareBroadcastFinishedNotification]) {
         NSLog(@"onBroadcastFinished");
         dispatch_after(dispatch_time(DISPATCH_TIME_NOW, (int64_t)(0.5 * NSEC_PER_SEC)), dispatch_get_main_queue(), ^{
             [self finishScreenShare];
         });
-        
+
     } else if ([identifier isEqualToString:TScreenShareBroadcastPausedNotification]) {
         NSLog(@"onBroadcastPaused");
-        
+
     } else if ([identifier isEqualToString:TScreenShareBroadcastResumedNotification]) {
         NSLog(@"onBroadcastResumed");
-        
     }
 }
 
@@ -156,6 +155,19 @@ static void NotificationCallback(CFNotificationCenterRef center,
         [self.localStreams removeObjectForKey:streamId];
         for (RTCVideoTrack *track in removeTracks) {
             [stream removeVideoTrack:track];
+        }
+    }
+}
+
+- (void)closeSystemPresention {
+    NSArray *urlTypes = [[[NSBundle mainBundle] infoDictionary] objectForKey:@"CFBundleURLTypes"];
+    NSDictionary *type = urlTypes.firstObject;
+    if (type != nil) {
+        NSArray *urlSchemes = type[@"CFBundleURLSchemes"];
+        NSString *scheme = urlSchemes.firstObject;
+        if (scheme != nil) {
+            NSURL *url = [NSURL URLWithString:[NSString stringWithFormat:@"%@://", scheme]];
+            [[UIApplication sharedApplication] openURL:url options:@{} completionHandler:nil];
         }
     }
 }
