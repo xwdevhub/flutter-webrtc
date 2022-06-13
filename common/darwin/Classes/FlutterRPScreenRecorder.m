@@ -1,23 +1,18 @@
 #import "FlutterRPScreenRecorder.h"
 #if TARGET_OS_IPHONE
 #import <ReplayKit/ReplayKit.h>
-#import "libyuv.h"
-#import "XWYUVConverter.h"
 #import "XWBroadcastManager.h"
-#import "XWServerSocket.h"
+#import "XWRecvTansport.h"
 
 //See: https://developer.apple.com/videos/play/wwdc2017/606/
-
 
 static const int DEFAULT_WIDTH = 1280;
 static const int DEFAULT_HEIGHT = 720;
 static const int DEFAULT_FPS = 30;
 
-//static void *KVOContext = &KVOContext;
-
 static CFStringRef TScreenShareHostRequestStopNotification = (__bridge CFStringRef)@"TScreenShareHostRequestStopNotification";
 
-@interface FlutterRPScreenRecorder ()
+@interface FlutterRPScreenRecorder () <XWRecvTansportDelegate>
 
 @property (nonatomic, strong) NSUserDefaults *userDefaults;
 
@@ -27,45 +22,34 @@ static CFStringRef TScreenShareHostRequestStopNotification = (__bridge CFStringR
 
 @implementation FlutterRPScreenRecorder {
     RTCVideoSource *_source;
+    XWRecvTansport *_recvTransport;
 }
 
 - (instancetype)initWithDelegate:(__weak id<RTCVideoCapturerDelegate>)delegate {
     _source = delegate;
     if (self = [super initWithDelegate:_source]) {
-        XWServerSocket *serverSocket = [XWServerSocket shared];
-        [serverSocket setupSocket];
-        __weak typeof(self) wSelf = self;
-        [serverSocket setOnBufferReceived:^(CMSampleBufferRef sampleBuffer) {
-            __strong typeof(wSelf) self = wSelf;
-            [self onBufferReceived:sampleBuffer];
-        }];
+      _recvTransport = [[XWRecvTansport alloc] initWithHost:@"127.0.0.1" port:8999];
+      [_recvTransport connect];
+      _recvTransport.delegate = self;
     }
     return self;
 }
 
-- (void)onBufferReceived:(CMSampleBufferRef)sampleBuffer {
-    if (!CMSampleBufferIsValid(sampleBuffer)) {
-        return;
-    }
-
-    CVPixelBufferRef pixelBuffer = CMSampleBufferGetImageBuffer(sampleBuffer);
-
-//    size_t width = CVPixelBufferGetWidth(pixelBuffer);
-//    size_t height = CVPixelBufferGetHeight(pixelBuffer);
-
-//    int width = [self->_videoConstraints[@"width"] intValue];
-//    int height = [self->_videoConstraints[@"height"] intValue];
-//    int fps = [self->_videoConstraints[@"fps"] intValue];
-//
-//    [self->_source adaptOutputFormatToWidth:width height:height fps:fps];
-
-    int64_t timeStampNs = CMTimeGetSeconds(CMSampleBufferGetPresentationTimeStamp(sampleBuffer)) * NSEC_PER_SEC;
-
-    RTCCVPixelBuffer *rtcPixelBuffer = [[RTCCVPixelBuffer alloc] initWithPixelBuffer:pixelBuffer];
-    RTCVideoFrame *videoFrame = [[RTCVideoFrame alloc] initWithBuffer:rtcPixelBuffer
-                                                             rotation:RTCVideoRotation_0
-                                                          timeStampNs:timeStampNs];
-    [self.delegate capturer:self didCaptureVideoFrame:videoFrame];
+- (void)transport:(XWRecvTansport *)transport didReceivedBuffer:(CVPixelBufferRef)pixelBuffer info:(NSDictionary *)info {
+  int64_t timeStamp = [info[@"timeStamp"] integerValue];
+  int w = [info[@"width"] intValue];
+  int h = [info[@"height"] intValue];
+  
+  int width = [self->_videoConstraints[@"width"] intValue];
+//  int height = [self->_videoConstraints[@"height"] intValue];
+  int fps = [self->_videoConstraints[@"fps"] intValue];
+  
+  RTCCVPixelBuffer *rtcPixelBuffer = [[RTCCVPixelBuffer alloc] initWithPixelBuffer:pixelBuffer];
+  RTCVideoFrame *videoFrame = [[RTCVideoFrame alloc] initWithBuffer:rtcPixelBuffer
+                                                           rotation:RTCVideoRotation_0
+                                                        timeStampNs:timeStamp];
+  [self->_source adaptOutputFormatToWidth:width height:width * h / w fps:fps];
+  [self.delegate capturer:self didCaptureVideoFrame:videoFrame];
 }
 
 - (void)setupUserDefaults {
@@ -82,7 +66,6 @@ static CFStringRef TScreenShareHostRequestStopNotification = (__bridge CFStringR
     }
     // 通过UserDefaults建立数据通道，接收Extension传递来的视频帧
     self.userDefaults = [[NSUserDefaults alloc] initWithSuiteName:groupID];
-//    [self.userDefaults addObserver:self forKeyPath:@"frame" options:NSKeyValueObservingOptionNew context:KVOContext];
 }
 
 - (void)startCapture {
@@ -99,12 +82,11 @@ static CFStringRef TScreenShareHostRequestStopNotification = (__bridge CFStringR
     if (@available(iOS 12.0, *)) {
         CFNotificationCenterPostNotification(CFNotificationCenterGetDarwinNotifyCenter(), TScreenShareHostRequestStopNotification, nil, nil, true);
         if (_userDefaults) {
-//            [self.userDefaults removeObserver:self forKeyPath:@"frame"];
             _userDefaults = nil;
             [XWBroadcastManager clear];
         }
     }
-    [[XWServerSocket shared] stopSocket];
+    [_recvTransport reset];
 }
 
 - (void)setConstraints:(NSDictionary *)constraints {
