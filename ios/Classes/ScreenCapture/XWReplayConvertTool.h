@@ -10,15 +10,30 @@
 
 NS_ASSUME_NONNULL_BEGIN
 
+struct PixelBufferHead {
+    uint16_t width;
+    uint16_t height;
+    uint16_t yPerRow;
+    uint16_t uvPerRow;
+    uint32_t size;
+    int32_t extendLeft;
+    int32_t extendRight;
+    int32_t extendTop;
+    int32_t extendBottom;
+    int64_t timeStamp;
+};
+
+typedef struct PixelBufferHead PixelBufferHead;
+
 @interface XWReplayConvertTool : NSObject
 
-+ (NSData *)convertSampleBufferToData:(CMSampleBufferRef)sampleBuffer;
++ (NSData *)convertSampleBufferToData:(CMSampleBufferRef)sampleBuffer head:(PixelBufferHead *)head;
 
-+ (NSData *)convertVideoSampleBufferToYuvData:(CMSampleBufferRef)sampleBuffer;
++ (NSData *)convertVideoSampleBufferToYuvData:(CMSampleBufferRef)sampleBuffer head:(PixelBufferHead *)head;
 
-+ (CVPixelBufferRef)createCVPixelBufferRefFromBuffer:(unsigned char *)buffer size:(int)size width:(int)w height:(int)h;
++ (CVPixelBufferRef)createCVPixelBufferRefFromBuffer:(unsigned char *)buffer head:(PixelBufferHead)head;
 
-+ (CVPixelBufferRef)createCVPixelBufferRefFromNV12buffer:(unsigned char *)buffer width:(int)w height:(int)h;
++ (CVPixelBufferRef)createCVPixelBufferRefFromNV12buffer:(unsigned char *)buffer head:(PixelBufferHead)head;
 
 @end
 
