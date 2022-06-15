@@ -9,13 +9,6 @@
 #import "GCDAsyncSocket.h"
 #import "XWReplayConvertTool.h"
 
-struct SampleBufferHead {
-    int32_t sampleBufferLength;
-    int16_t sampleBufferWidth;
-    int16_t sampleBufferHeight;
-    int64_t timeStamp;
-};
-
 @interface XWRecvTansport () <GCDAsyncSocketDelegate>
 
 @end
@@ -78,38 +71,42 @@ struct SampleBufferHead {
 - (void)socket:(GCDAsyncSocket *)sock didReadData:(NSData *)data withTag:(long)tag {
     [_cacheData appendData:data];
 
-    struct SampleBufferHead head;
+    struct PixelBufferHead head;
     memcpy(&head, _cacheData.bytes, sizeof(head));
-//    NSLog(@">>>length %d, w %d, h %d ", head.sampleBufferLength, head.sampleBufferWidth, head.sampleBufferHeight);
+    //    NSLog(@">>>size %d, w %d, h %d , left %d, right %d, top %d, bottom %d",
+    //          head.size,
+    //          head.width,
+    //          head.height,
+    //          head.extendLeft,
+    //          head.extendRight,
+    //          head.extendTop,
+    //          head.extendBottom);
 
-    int32_t sampleBufferLength = (int32_t)head.sampleBufferLength;
+    int32_t bufferSize = (int32_t)head.size;
 
-    if (_cacheData.length > sizeof(head) + sampleBufferLength) {
-        void *buffer = malloc(sampleBufferLength);
-        memcpy(buffer, _cacheData.bytes + sizeof(head), head.sampleBufferLength);
+    if (_cacheData.length > sizeof(head) + bufferSize) {
+        void *buffer = malloc(bufferSize);
+        memcpy(buffer, _cacheData.bytes + sizeof(head), bufferSize);
 
-        CVPixelBufferRef pixelBuffer = [XWReplayConvertTool createCVPixelBufferRefFromBuffer:buffer
-                                                                                        size:head.sampleBufferLength
-                                                                                       width:head.sampleBufferWidth
-                                                                                      height:head.sampleBufferHeight];
+        CVPixelBufferRef pixelBuffer = [XWReplayConvertTool createCVPixelBufferRefFromNV12buffer:buffer head:head];
 
-        int32_t otherLength = (int32_t)_cacheData.length - sampleBufferLength - sizeof(head);
-        void *other = malloc(otherLength);
-        memcpy(other, _cacheData.bytes + head.sampleBufferLength + sizeof(head), otherLength);
+        int32_t leftOverSize = (int32_t)_cacheData.length - sizeof(head) - bufferSize;
+        void *leftOver = malloc(leftOverSize);
+        memcpy(leftOver, _cacheData.bytes + sizeof(head) + bufferSize, leftOverSize);
 
-        _cacheData = [NSMutableData dataWithBytes:other length:otherLength];
+        _cacheData = [NSMutableData dataWithBytes:leftOver length:leftOverSize];
 
         if ([self.delegate respondsToSelector:@selector(transport:didReceivedBuffer:info:)]) {
             NSDictionary *info = @{
-                @"length" : @(head.sampleBufferLength),
-                @"width" : @(head.sampleBufferWidth),
-                @"height" : @(head.sampleBufferHeight),
+                @"size" : @(bufferSize),
+                @"width" : @(head.width),
+                @"height" : @(head.height),
                 @"timeStamp" : @(head.timeStamp),
             };
             [self.delegate transport:self didReceivedBuffer:pixelBuffer info:info];
         }
 
-        free(other);
+        free(leftOver);
         free(buffer);
         CVPixelBufferRelease(pixelBuffer);
     }
