@@ -16,10 +16,6 @@ struct PixelBufferHead {
     uint16_t yPerRow;
     uint16_t uvPerRow;
     uint32_t size;
-    int32_t extendLeft;
-    int32_t extendRight;
-    int32_t extendTop;
-    int32_t extendBottom;
     int64_t timeStamp;
 };
 

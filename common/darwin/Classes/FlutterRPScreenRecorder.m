@@ -10,7 +10,7 @@ static const int DEFAULT_WIDTH = 1280;
 static const int DEFAULT_HEIGHT = 720;
 static const int DEFAULT_FPS = 30;
 
-static CFStringRef TScreenShareHostRequestStopNotification = (__bridge CFStringRef)@"TScreenShareHostRequestStopNotification";
+static CFStringRef TScreenShareHostRequestStopNotification = (__bridge CFStringRef) @"TScreenShareHostRequestStopNotification";
 
 @interface FlutterRPScreenRecorder () <XWRecvTansportDelegate>
 
@@ -28,28 +28,30 @@ static CFStringRef TScreenShareHostRequestStopNotification = (__bridge CFStringR
 - (instancetype)initWithDelegate:(__weak id<RTCVideoCapturerDelegate>)delegate {
     _source = delegate;
     if (self = [super initWithDelegate:_source]) {
-      _recvTransport = [[XWRecvTansport alloc] initWithHost:@"127.0.0.1" port:8999];
-      [_recvTransport connect];
-      _recvTransport.delegate = self;
+        _recvTransport = [[XWRecvTansport alloc] initWithHost:@"127.0.0.1" port:8999];
+        [_recvTransport connect];
+        _recvTransport.delegate = self;
     }
     return self;
 }
 
 - (void)transport:(XWRecvTansport *)transport didReceivedBuffer:(CVPixelBufferRef)pixelBuffer info:(NSDictionary *)info {
-  int64_t timeStamp = [info[@"timeStamp"] integerValue];
-  int w = [info[@"width"] intValue];
-  int h = [info[@"height"] intValue];
-  
-  int width = [self->_videoConstraints[@"width"] intValue];
-//  int height = [self->_videoConstraints[@"height"] intValue];
-  int fps = [self->_videoConstraints[@"fps"] intValue];
-  
-  RTCCVPixelBuffer *rtcPixelBuffer = [[RTCCVPixelBuffer alloc] initWithPixelBuffer:pixelBuffer];
-  RTCVideoFrame *videoFrame = [[RTCVideoFrame alloc] initWithBuffer:rtcPixelBuffer
-                                                           rotation:RTCVideoRotation_0
-                                                        timeStampNs:timeStamp];
-  [self->_source adaptOutputFormatToWidth:width height:width * h / w fps:fps];
-  [self.delegate capturer:self didCaptureVideoFrame:videoFrame];
+    int64_t timeStamp = [info[@"timeStamp"] integerValue];
+    int w = [info[@"width"] intValue];
+    int h = [info[@"height"] intValue];
+
+    int width = [self->_videoConstraints[@"width"] intValue];
+    //  int height = [self->_videoConstraints[@"height"] intValue];
+    int fps = [self->_videoConstraints[@"fps"] intValue];
+
+    [self->_source adaptOutputFormatToWidth:width height:width * h / w fps:fps];
+
+    RTCCVPixelBuffer *rtcPixelBuffer = [[RTCCVPixelBuffer alloc] initWithPixelBuffer:pixelBuffer];
+    RTCVideoFrame *videoFrame = [[RTCVideoFrame alloc] initWithBuffer:rtcPixelBuffer
+                                                             rotation:RTCVideoRotation_0
+                                                          timeStampNs:timeStamp];
+
+    [self.delegate capturer:self didCaptureVideoFrame:videoFrame];
 }
 
 - (void)setupUserDefaults {
@@ -103,7 +105,7 @@ static CFStringRef TScreenShareHostRequestStopNotification = (__bridge CFStringR
 
 - (void)stopCaptureWithCompletionHandler:(nullable void (^)(void))completionHandler {
     [self stopCapture];
-    if(completionHandler != nil) {
+    if (completionHandler != nil) {
         completionHandler();
     }
 }
