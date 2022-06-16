@@ -73,28 +73,25 @@
 
     struct PixelBufferHead head;
     memcpy(&head, _cacheData.bytes, sizeof(head));
-    //    NSLog(@">>>size %d, w %d, h %d , left %d, right %d, top %d, bottom %d",
-    //          head.size,
-    //          head.width,
-    //          head.height,
-    //          head.extendLeft,
-    //          head.extendRight,
-    //          head.extendTop,
-    //          head.extendBottom);
+    //    NSLog(@">>>size %d, w %d, h %d", head.size, head.width, head.height);
 
     int32_t bufferSize = (int32_t)head.size;
 
-    if (_cacheData.length > sizeof(head) + bufferSize) {
+    if (_cacheData.length >= sizeof(head) + bufferSize) {
         void *buffer = malloc(bufferSize);
         memcpy(buffer, _cacheData.bytes + sizeof(head), bufferSize);
 
         CVPixelBufferRef pixelBuffer = [XWReplayConvertTool createCVPixelBufferRefFromNV12buffer:buffer head:head];
 
         int32_t leftOverSize = (int32_t)_cacheData.length - sizeof(head) - bufferSize;
-        void *leftOver = malloc(leftOverSize);
-        memcpy(leftOver, _cacheData.bytes + sizeof(head) + bufferSize, leftOverSize);
-
-        _cacheData = [NSMutableData dataWithBytes:leftOver length:leftOverSize];
+        if (leftOverSize > 0) {
+            void *leftOver = malloc(leftOverSize);
+            memcpy(leftOver, _cacheData.bytes + sizeof(head) + bufferSize, leftOverSize);
+            _cacheData = [NSMutableData dataWithBytes:leftOver length:leftOverSize];
+            free(leftOver);
+        } else {
+            _cacheData = [NSMutableData data];
+        }
 
         if ([self.delegate respondsToSelector:@selector(transport:didReceivedBuffer:info:)]) {
             NSDictionary *info = @{
@@ -106,9 +103,8 @@
             [self.delegate transport:self didReceivedBuffer:pixelBuffer info:info];
         }
 
-        free(leftOver);
-        free(buffer);
         CVPixelBufferRelease(pixelBuffer);
+        free(buffer);
     }
 
     [sock readDataWithTimeout:-1 tag:0];

@@ -21,12 +21,12 @@
     uint16_t height = (uint16_t)CVPixelBufferGetHeight(pixelBuffer);
     head->height = height;
 
-    size_t left, right, top, bottom;
-    CVPixelBufferGetExtendedPixels(pixelBuffer, &left, &right, &top, &bottom);
-    head->extendLeft = (int32_t)left;
-    head->extendRight = (int32_t)right;
-    head->extendTop = (int32_t)top;
-    head->extendBottom = (int32_t)bottom;
+    //    size_t left, right, top, bottom;
+    //    CVPixelBufferGetExtendedPixels(pixelBuffer, &left, &right, &top, &bottom);
+    //    head->extendLeft = (int32_t)left;
+    //    head->extendRight = (int32_t)right;
+    //    head->extendTop = (int32_t)top;
+    //    head->extendBottom = (int32_t)bottom;
 
     void *src_buff = CVPixelBufferGetBaseAddress(pixelBuffer);
     NSData *data = [NSData dataWithBytes:src_buff length:row * height];
@@ -46,12 +46,12 @@
     //表示开始操作数据
     CVPixelBufferLockBaseAddress(pixelBuffer, 0);
 
-    size_t left, right, top, bottom;
-    CVPixelBufferGetExtendedPixels(pixelBuffer, &left, &right, &top, &bottom);
-    head->extendLeft = (int32_t)left;
-    head->extendRight = (int32_t)right;
-    head->extendTop = (int32_t)top;
-    head->extendBottom = (int32_t)bottom;
+    //    size_t left, right, top, bottom;
+    //    CVPixelBufferGetExtendedPixels(pixelBuffer, &left, &right, &top, &bottom);
+    //    head->extendLeft = (int32_t)left;
+    //    head->extendRight = (int32_t)right;
+    //    head->extendTop = (int32_t)top;
+    //    head->extendBottom = (int32_t)bottom;
 
     //图像宽度（像素）
     size_t pixelWidth = CVPixelBufferGetWidth(pixelBuffer);
@@ -92,10 +92,10 @@
 
 + (CVPixelBufferRef)createCVPixelBufferRefFromBuffer:(unsigned char *)buffer head:(PixelBufferHead)head {
     NSDictionary *pixelAttributes = @{
-        (NSString *)kCVPixelBufferExtendedPixelsLeftKey : @(head.extendLeft),
-        (NSString *)kCVPixelBufferExtendedPixelsRightKey : @(head.extendRight),
-        (NSString *)kCVPixelBufferExtendedPixelsTopKey : @(head.extendTop),
-        (NSString *)kCVPixelBufferExtendedPixelsBottomKey : @(head.extendBottom),
+        //        (NSString *)kCVPixelBufferExtendedPixelsLeftKey : @(head.extendLeft),
+        //        (NSString *)kCVPixelBufferExtendedPixelsRightKey : @(head.extendRight),
+        //        (NSString *)kCVPixelBufferExtendedPixelsTopKey : @(head.extendTop),
+        //        (NSString *)kCVPixelBufferExtendedPixelsBottomKey : @(head.extendBottom),
     };
 
     CVPixelBufferRef pixelBuffer = NULL;
@@ -121,10 +121,10 @@
 
 + (CVPixelBufferRef)createCVPixelBufferRefFromNV12buffer:(unsigned char *)buffer head:(PixelBufferHead)head {
     NSDictionary *pixelAttributes = @{
-        (NSString *)kCVPixelBufferExtendedPixelsLeftKey : @(head.extendLeft),
-        (NSString *)kCVPixelBufferExtendedPixelsRightKey : @(head.extendRight),
-        (NSString *)kCVPixelBufferExtendedPixelsTopKey : @(head.extendTop),
-        (NSString *)kCVPixelBufferExtendedPixelsBottomKey : @(head.extendBottom),
+        //        (NSString *)kCVPixelBufferExtendedPixelsLeftKey : @(head.extendLeft),
+        //        (NSString *)kCVPixelBufferExtendedPixelsRightKey : @(head.extendRight),
+        //        (NSString *)kCVPixelBufferExtendedPixelsTopKey : @(head.extendTop),
+        //        (NSString *)kCVPixelBufferExtendedPixelsBottomKey : @(head.extendBottom),
     };
 
     CVPixelBufferRef pixelBuffer = NULL;
@@ -148,13 +148,13 @@
     unsigned char *y_ch1 = buffer + head.yPerRow * head.height;
     memcpy(uvDestPlane, y_ch1, head.uvPerRow * head.height / 2);
 
-    CVBufferSetAttachment(pixelBuffer, kCVImageBufferChromaLocationBottomFieldKey, kCVImageBufferChromaLocation_Left, kCVAttachmentMode_ShouldPropagate);
-    CVBufferSetAttachment(pixelBuffer, kCVImageBufferChromaLocationTopFieldKey, kCVImageBufferChromaLocation_Left, kCVAttachmentMode_ShouldPropagate);
-    CVBufferSetAttachment(pixelBuffer, kCVImageBufferColorPrimariesKey, kCVImageBufferColorPrimaries_ITU_R_709_2, kCVAttachmentMode_ShouldPropagate);
-    if (@available(iOS 11.0, *)) {
-        CVBufferSetAttachment(pixelBuffer, kCVImageBufferTransferFunctionKey, kCVImageBufferTransferFunction_sRGB, kCVAttachmentMode_ShouldPropagate);
-    }
-    CVBufferSetAttachment(pixelBuffer, kCVImageBufferYCbCrMatrixKey, kCVImageBufferYCbCrMatrix_ITU_R_709_2, kCVAttachmentMode_ShouldPropagate);
+    //    CVBufferSetAttachment(pixelBuffer, kCVImageBufferChromaLocationBottomFieldKey, kCVImageBufferChromaLocation_Left, kCVAttachmentMode_ShouldPropagate);
+    //    CVBufferSetAttachment(pixelBuffer, kCVImageBufferChromaLocationTopFieldKey, kCVImageBufferChromaLocation_Left, kCVAttachmentMode_ShouldPropagate);
+    //    CVBufferSetAttachment(pixelBuffer, kCVImageBufferColorPrimariesKey, kCVImageBufferColorPrimaries_ITU_R_709_2, kCVAttachmentMode_ShouldPropagate);
+    //    if (@available(iOS 11.0, *)) {
+    //        CVBufferSetAttachment(pixelBuffer, kCVImageBufferTransferFunctionKey, kCVImageBufferTransferFunction_sRGB, kCVAttachmentMode_ShouldPropagate);
+    //    }
+    //    CVBufferSetAttachment(pixelBuffer, kCVImageBufferYCbCrMatrixKey, kCVImageBufferYCbCrMatrix_ITU_R_709_2, kCVAttachmentMode_ShouldPropagate);
 
     CVPixelBufferUnlockBaseAddress(pixelBuffer, 0);
 
