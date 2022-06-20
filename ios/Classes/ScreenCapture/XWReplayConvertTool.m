@@ -6,6 +6,7 @@
 //
 
 #import "XWReplayConvertTool.h"
+#import <mach/mach.h>
 
 @implementation XWReplayConvertTool
 
@@ -36,7 +37,7 @@
     return data;
 }
 
-+ (NSData *)convertVideoSampleBufferToYuvData:(CMSampleBufferRef)sampleBuffer head:(PixelBufferHead *)head {
++ (nullable NSData *)convertVideoSampleBufferToYuvData:(CMSampleBufferRef)sampleBuffer head:(PixelBufferHead *)head {
     head->timeStamp = CMTimeGetSeconds(CMSampleBufferGetPresentationTimeStamp(sampleBuffer)) * NSEC_PER_SEC;
     // 获取yuv数据
     // 通过CMSampleBufferGetImageBuffer方法，获得CVImageBufferRef。
@@ -72,6 +73,10 @@
     size_t uv_size = uv_perRow * pixelHeight / 2;
 
     uint8_t *yuv_frame = (uint8_t *)malloc(y_size + uv_size);
+    if ([self getCurUsedMemory] > 15 * 1024 * 1024) {
+        free(yuv_frame);
+        return nil;
+    }
 
     //获取CVImageBufferRef中的y数据
     uint8_t *y_frame = (uint8_t *)CVPixelBufferGetBaseAddressOfPlane(pixelBuffer, 0);
@@ -82,7 +87,8 @@
     memcpy(yuv_frame + y_size, uv_frame, uv_size);
 
     //返回数据
-    NSData *data = [NSData dataWithBytesNoCopy:yuv_frame length:y_size + uv_size];
+    NSData *data = [NSData dataWithBytes:yuv_frame length:y_size + uv_size];
+    free(yuv_frame);
     head->size = (uint32_t)data.length;
 
     CVPixelBufferUnlockBaseAddress(pixelBuffer, 0);
@@ -162,6 +168,14 @@
         NSLog(@"Unable to create cvpixelbuffer %d", result);
     }
     return pixelBuffer;
+}
+
++ (long)getCurUsedMemory {
+    struct task_basic_info info;
+    mach_msg_type_number_t size = TASK_BASIC_INFO_COUNT; //sizeof(info);
+    kern_return_t kerr = task_info(mach_task_self(), TASK_BASIC_INFO, (task_info_t)&info, &size);
+    long cur_used_mem = (kerr == KERN_SUCCESS) ? info.resident_size : 0; // size in bytes
+    return cur_used_mem;
 }
 
 @end

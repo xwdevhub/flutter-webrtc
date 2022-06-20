@@ -25,7 +25,7 @@ typedef struct PixelBufferHead PixelBufferHead;
 
 + (NSData *)convertSampleBufferToData:(CMSampleBufferRef)sampleBuffer head:(PixelBufferHead *)head;
 
-+ (NSData *)convertVideoSampleBufferToYuvData:(CMSampleBufferRef)sampleBuffer head:(PixelBufferHead *)head;
++ (nullable NSData *)convertVideoSampleBufferToYuvData:(CMSampleBufferRef)sampleBuffer head:(PixelBufferHead *)head;
 
 + (CVPixelBufferRef)createCVPixelBufferRefFromBuffer:(unsigned char *)buffer head:(PixelBufferHead)head;
 
