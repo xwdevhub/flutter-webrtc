@@ -5,11 +5,14 @@
 #import "FlutterRTCDesktopCapturer.h"
 #import "FlutterRTCVideoRenderer.h"
 #import "AudioUtils.h"
-//添加共享采集处理文件
-#import "XWRTCScreenStream.h"
 
 #import <AVFoundation/AVFoundation.h>
 #import <WebRTC/WebRTC.h>
+
+//添加共享采集处理文件
+#if TARGET_OS_IPHONE
+#import "XWRTCScreenStream.h"
+#endif
 
 #pragma clang diagnostic push
 #pragma clang diagnostic ignored "-Wprotocol"
@@ -415,19 +418,11 @@
                 RTCVideoTrack *videoTrack = (RTCVideoTrack *)track;
 #if TARGET_OS_IPHONE
                 RTCVideoSource *source = videoTrack.source;
-                if (source == self.videoCapturer.delegate) {
-                    shouldCallResult = NO;
-                    [self.videoCapturer stopCaptureWithCompletionHandler:^{
+                if (source == self.screenCapturer.delegate && self.screenCapturer != nil) {
+                    [self.screenCapturer stopCaptureWithCompletionHandler:^{
                         result(nil);
                     }];
-                    self.videoCapturer = nil;
-                } else if (source == self.screenCapturer.delegate) {
-                    if (self.screenCapturer) {
-                        [self.screenCapturer stopCaptureWithCompletionHandler:^{
-                            result(nil);
-                        }];
-                        self.screenCapturer = nil;
-                    }
+                    self.screenCapturer = nil;
                 }
 #else
                 CapturerStopHandler stopHandler = self.videoCapturerStopHandlers[videoTrack.trackId];
@@ -517,6 +512,15 @@
             for (RTCVideoTrack *track in stream.videoTracks) {
                 if([trackId isEqualToString:track.trackId]) {
                     [stream removeVideoTrack:track];
+#if TARGET_OS_IPHONE
+                RTCVideoSource *source = track.source;
+                if (source == self.screenCapturer.delegate && self.screenCapturer != nil) {
+                    [self.screenCapturer stopCaptureWithCompletionHandler:^{
+                        result(nil);
+                    }];
+                    self.screenCapturer = nil;
+                }
+#endif
                     CapturerStopHandler stopHandler = self.videoCapturerStopHandlers[track.trackId];
                     if(stopHandler) {
                         stopHandler(^{
