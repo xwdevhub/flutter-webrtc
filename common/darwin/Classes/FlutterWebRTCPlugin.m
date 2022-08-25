@@ -4,11 +4,14 @@
 #import "FlutterRTCDataChannel.h"
 #import "FlutterRTCVideoRenderer.h"
 #import "AudioUtils.h"
-//添加共享采集处理文件
-#import "XWRTCScreenStream.h"
 
 #import <AVFoundation/AVFoundation.h>
 #import <WebRTC/WebRTC.h>
+
+#if TARGET_OS_IPHONE
+//添加共享采集处理文件
+#import "XWRTCScreenStream.h"
+#endif
 
 #pragma clang diagnostic push
 #pragma clang diagnostic ignored "-Wprotocol"
@@ -375,7 +378,9 @@
                       result(nil);
                     }];
                     self.videoCapturer = nil;
-                } else if (source == self.screenCapturer.delegate) {
+                }
+#if TARGET_OS_IPHONE
+                else if (source == self.screenCapturer.delegate) {
                   if (self.screenCapturer) {
                     [self.screenCapturer stopCaptureWithCompletionHandler:^{
                       result(nil);
@@ -383,6 +388,7 @@
                     self.screenCapturer = nil;
                   }
                 }
+#endif
             }
             for (RTCAudioTrack *track in stream.audioTracks) {
                 [self.localTracks removeObjectForKey:track.trackId];
