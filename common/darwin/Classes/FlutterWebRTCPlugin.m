@@ -11,6 +11,12 @@
 #import <WebRTC/RTCFieldTrials.h>
 #import <WebRTC/WebRTC.h>
 
+// <<< 自定义iOS屏幕共享采集
+#if TARGET_OS_IPHONE
+#import "XWRTCScreenStream.h"
+#endif
+// 自定义iOS屏幕共享采集 >>>
+
 #pragma clang diagnostic push
 #pragma clang diagnostic ignored "-Wprotocol"
 
@@ -133,6 +139,9 @@ NSArray<RTC_OBJC_TYPE(RTCVideoCodecInfo) *>* motifyH264ProfileLevelId(
 #if TARGET_OS_IPHONE
     _preferredInput = AVAudioSessionPortHeadphones;
     self.viewController = viewController;
+    // <<< 自定义iOS屏幕共享采集
+    [self addScreenShareBroadcastNotification];
+    // 自定义iOS屏幕共享采集 >>>
 #endif
   }
   // RTCSetMinDebugLogLevel(RTCLoggingSeverityVerbose);
@@ -257,7 +266,14 @@ NSArray<RTC_OBJC_TYPE(RTCVideoCodecInfo) *>* motifyH264ProfileLevelId(
   } else if ([@"getDisplayMedia" isEqualToString:call.method]) {
     NSDictionary* argsMap = call.arguments;
     NSDictionary* constraints = argsMap[@"constraints"];
+    // <<< 自定义iOS屏幕共享采集
+    // [self getDisplayMedia:constraints result:result];
+#if TARGET_OS_IPHONE
+    [self getDisplayScreenMedia:constraints result:result];
+#else
     [self getDisplayMedia:constraints result:result];
+#endif
+    // 自定义iOS屏幕共享采集 >>>
   } else if ([@"createLocalMediaStream" isEqualToString:call.method]) {
     [self createLocalMediaStream:result];
   } else if ([@"getSources" isEqualToString:call.method]) {
@@ -518,6 +534,17 @@ NSArray<RTC_OBJC_TYPE(RTCVideoCodecInfo) *>* motifyH264ProfileLevelId(
           });
           [self.videoCapturerStopHandlers removeObjectForKey:videoTrack.trackId];
         }
+        // <<< 自定义iOS屏幕共享采集
+#if TARGET_OS_IPHONE
+        RTCVideoSource *source = videoTrack.source;
+        if (source == self.screenCapturer.delegate && self.screenCapturer != nil) {
+            [self.screenCapturer stopCaptureWithCompletionHandler:^{
+                result(nil);
+            }];
+            self.screenCapturer = nil;
+        }
+#endif
+        // 自定义iOS屏幕共享采集 >>>
       }
       for (RTCAudioTrack* track in stream.audioTracks) {
         [_localTracks removeObjectForKey:track.trackId];
@@ -615,6 +642,17 @@ NSArray<RTC_OBJC_TYPE(RTCVideoCodecInfo) *>* motifyH264ProfileLevelId(
             });
             [self.videoCapturerStopHandlers removeObjectForKey:track.trackId];
           }
+          // <<< 自定义iOS屏幕共享采集
+#if TARGET_OS_IPHONE
+          RTCVideoSource *source = track.source;
+          if (source == self.screenCapturer.delegate && self.screenCapturer != nil) {
+              [self.screenCapturer stopCaptureWithCompletionHandler:^{
+                  result(nil);
+              }];
+              self.screenCapturer = nil;
+          }
+#endif
+          // 自定义iOS屏幕共享采集 >>>
         }
       }
     }
