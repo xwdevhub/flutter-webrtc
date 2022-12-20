@@ -9,5 +9,7 @@
 
 - (void)stopCapture;
 
+- (void)setConstraints:(nonnull NSDictionary *)constraints;
+
 @end
 #endif

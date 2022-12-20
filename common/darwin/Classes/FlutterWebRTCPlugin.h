@@ -7,6 +7,12 @@
 #import <Foundation/Foundation.h>
 #import <WebRTC/WebRTC.h>
 
+// <<< 自定义iOS屏幕共享采集
+#if TARGET_OS_IPHONE
+#import "FlutterRPScreenRecorder.h"
+#endif
+// 自定义iOS屏幕共享采集 >>>
+
 @class FlutterRTCVideoRenderer;
 @class FlutterRTCFrameCapturer;
 
@@ -46,8 +52,15 @@ typedef void (^CapturerStopHandler)(CompletionHandler handler);
 @property(nonatomic) int _targetHeight;
 @property(nonatomic) int _targetFps;
 
+// <<< 自定义iOS屏幕共享采集
+#if TARGET_OS_IPHONE
+@property (nonatomic, strong) FlutterRPScreenRecorder *screenCapturer;
+#endif
+// 自定义iOS屏幕共享采集 >>>
+
 - (RTCMediaStream*)streamForId:(NSString*)streamId peerConnectionId:(NSString*)peerConnectionId;
 - (NSDictionary*)mediaStreamToMap:(RTCMediaStream*)stream ownerTag:(NSString*)ownerTag;
+
 - (NSDictionary*)mediaTrackToMap:(RTCMediaStreamTrack*)track;
 - (NSDictionary*)receiverToMap:(RTCRtpReceiver*)receiver;
 - (NSDictionary*)transceiverToMap:(RTCRtpTransceiver*)transceiver;
