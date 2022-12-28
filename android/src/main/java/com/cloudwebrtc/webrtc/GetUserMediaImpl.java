@@ -517,9 +517,12 @@ class GetUserMediaImpl {
                                 (WindowManager) applicationContext.getSystemService(Context.WINDOW_SERVICE);
 
                         VideoCapturerInfo info = new VideoCapturerInfo();
-                        info.width = wm.getDefaultDisplay().getWidth();
-                        info.height = wm.getDefaultDisplay().getHeight();
-                        info.fps = DEFAULT_FPS;
+                        // info.width = wm.getDefaultDisplay().getWidth();
+                        // info.height = wm.getDefaultDisplay().getHeight();
+                        // info.fps = DEFAULT_FPS;
+                        info.width = constraints.getInt("width");
+                        info.height = constraints.getInt("height");
+                        info.fps = constraints.getInt("fps");
                         info.isScreenCapture = true;
                         info.capturer = videoCapturer;
 
