@@ -60,14 +60,19 @@
 + (void)setSpeakerphoneOn:(BOOL)enable {
   RTCAudioSession* session = [RTCAudioSession sharedInstance];
   RTCAudioSessionConfiguration* config = [RTCAudioSessionConfiguration webRTCConfiguration];
+  config.category = AVAudioSessionCategoryPlayAndRecord;
+  config.mode = AVAudioSessionModeVoiceChat;
+  AVAudioSessionCategoryOptions options = AVAudioSessionCategoryOptionAllowAirPlay |
+                                          AVAudioSessionCategoryOptionAllowBluetoothA2DP |
+                                          AVAudioSessionCategoryOptionAllowBluetooth;
+  config.categoryOptions = enable ? AVAudioSessionCategoryOptionDefaultToSpeaker | options : options;
+  [RTCAudioSessionConfiguration setWebRTCConfiguration:config];
   [session lockForConfiguration];
   NSError* error = nil;
   if (!enable) {
     [session setMode:config.mode error:&error];
     BOOL success = [session setCategory:config.category
-                            withOptions:AVAudioSessionCategoryOptionAllowAirPlay |
-                                        AVAudioSessionCategoryOptionAllowBluetoothA2DP |
-                                        AVAudioSessionCategoryOptionAllowBluetooth
+                            withOptions:config.categoryOptions
                                   error:&error];
 
     success = [session.session overrideOutputAudioPort:kAudioSessionOverrideAudioRoute_None
@@ -77,10 +82,7 @@
   } else {
     [session setMode:config.mode error:&error];
     BOOL success = [session setCategory:config.category
-                            withOptions:AVAudioSessionCategoryOptionDefaultToSpeaker |
-                                        AVAudioSessionCategoryOptionAllowAirPlay |
-                                        AVAudioSessionCategoryOptionAllowBluetoothA2DP |
-                                        AVAudioSessionCategoryOptionAllowBluetooth
+                            withOptions:config.categoryOptions
                                   error:&error];
 
     success = [session overrideOutputAudioPort:kAudioSessionOverrideAudioRoute_Speaker

@@ -1281,8 +1281,8 @@ NSArray<RTC_OBJC_TYPE(RTCVideoCodecInfo) *>* motifyH264ProfileLevelId(
 
 - (void)ensureAudioSession {
 #if TARGET_OS_IPHONE
-  [AudioUtils ensureAudioSessionWithRecording:[self hasLocalAudioTrack]];
-  [AudioUtils setSpeakerphoneOn:_speakerOn];
+//  [AudioUtils ensureAudioSessionWithRecording:[self hasLocalAudioTrack]];
+//  [AudioUtils setSpeakerphoneOn:_speakerOn];
 #endif
 }
 
