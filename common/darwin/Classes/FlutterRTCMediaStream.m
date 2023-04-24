@@ -613,7 +613,7 @@ typedef void (^NavigatorUserMediaSuccessCallback)(RTCMediaStream* mediaStream);
     [sources addObject:@{
       @"facing" : device.positionString,
       @"deviceId" : device.uniqueID,
-      @"label" : device.localizedName,
+      @"label" : device.localizedName != nil ? device.localizedName : device.positionString,
       @"kind" : @"videoinput",
     }];
   }
