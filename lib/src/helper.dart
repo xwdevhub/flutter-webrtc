@@ -171,4 +171,12 @@ class Helper {
       throw Exception('requestCapturePermission only support for Android');
     }
   }
+
+  static Future<bool> stopDisplayMedia() async {
+    if (WebRTC.platformIsWindows) {
+      return await WebRTC.invokeMethod('stopDisplayMedia');
+    } else {
+      throw Exception('stopDisplayMedia only support for Windows');
+    }
+  }
 }
