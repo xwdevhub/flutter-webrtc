@@ -55,6 +55,16 @@ void FlutterWebRTC::HandleMethodCall(
     GetDisplayMedia(constraints, std::move(result));
   } else if (method_call.method_name().compare("stopDisplayMedia") == 0) {
     StopDisplayMedia(std::move(result));
+  } else if (method_call.method_name().compare("setRnnoiseEnable") == 0) {
+    if (!method_call.arguments()) {
+      result->Error("Bad Arguments", "Bad arguments received");
+      return;
+    }
+    const EncodableMap params =
+        GetValue<EncodableMap>(*method_call.arguments());
+    const int enable = findInt(params, "enable");
+    libwebrtc::LibWebRTC::SetRnnoiseEnable(enable);
+    result->Success();
   } else if (method_call.method_name().compare("getDesktopSources") == 0) {
     // types: ["screen", "window"]
     if (!method_call.arguments()) {
