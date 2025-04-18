@@ -176,15 +176,6 @@ void FlutterScreenCapture::GetDesktopSourceThumbnail(
   result->Success(EncodableValue(source->thumbnail().std_vector()));
 }
 
-void FlutterScreenCapture::StopDisplayMedia(
-    std::unique_ptr<MethodResultProxy> result) {
-  if (desktop_capturer_ != nullptr && desktop_capturer_->IsRunning()) {
-    desktop_capturer_->Stop();
-    desktop_capturer_ = nullptr;
-  }
-  result->Success(EncodableValue(true));
-}
-
 void FlutterScreenCapture::GetDisplayMedia(
     const EncodableMap& constraints,
     std::unique_ptr<MethodResultProxy> result) {
@@ -284,8 +275,6 @@ void FlutterScreenCapture::GetDisplayMedia(
   base_->local_streams_[uuid] = stream;
 
   desktop_capturer->Start(uint32_t(fps));
-
-  desktop_capturer_ = desktop_capturer;
 
   result->Success(EncodableValue(params));
 }

@@ -172,14 +172,6 @@ class Helper {
     }
   }
 
-  static Future<bool> stopDisplayMedia() async {
-    if (WebRTC.platformIsWindows) {
-      return await WebRTC.invokeMethod('stopDisplayMedia');
-    } else {
-      throw Exception('stopDisplayMedia only support for Windows');
-    }
-  }
-
   static Future<void> setRnnoiseEnable(bool enable) async {
     if (WebRTC.platformIsWindows) {
       return await WebRTC.invokeMethod(

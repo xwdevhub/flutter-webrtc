@@ -53,8 +53,6 @@ void FlutterWebRTC::HandleMethodCall(
     const EncodableMap constraints = findMap(params, "constraints");
 
     GetDisplayMedia(constraints, std::move(result));
-  } else if (method_call.method_name().compare("stopDisplayMedia") == 0) {
-    StopDisplayMedia(std::move(result));
   } else if (method_call.method_name().compare("setRnnoiseEnable") == 0) {
     if (!method_call.arguments()) {
       result->Error("Bad Arguments", "Bad arguments received");

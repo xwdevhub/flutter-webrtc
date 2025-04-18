@@ -14,8 +14,6 @@ class FlutterScreenCapture : public MediaListObserver,
  public:
   FlutterScreenCapture(FlutterWebRTCBase* base);
 
-  void StopDisplayMedia(std::unique_ptr<MethodResultProxy> result);
-
   void GetDisplayMedia(const EncodableMap& constraints,
                        std::unique_ptr<MethodResultProxy> result);
 
@@ -55,7 +53,6 @@ class FlutterScreenCapture : public MediaListObserver,
   FlutterWebRTCBase* base_;
   std::map<DesktopType, scoped_refptr<RTCDesktopMediaList>> medialist_;
   std::vector<scoped_refptr<MediaSource>> sources_;
-  scoped_refptr<RTCDesktopCapturer> desktop_capturer_;
 };
 
 }  // namespace flutter_webrtc_plugin
