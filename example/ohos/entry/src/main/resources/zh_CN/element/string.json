@@ -1,0 +1,36 @@
+{
+  "string": [
+    {
+      "name": "module_desc",
+      "value": "模块描述"
+    },
+    {
+      "name": "EntryAbility_desc",
+      "value": "description"
+    },
+    {
+      "name": "EntryAbility_label",
+      "value": "flutter_webrtc_example"
+    },
+    {
+      "name": "internet_permission_reason",
+      "value": "internet permission"
+    },
+    {
+      "name": "camera_permission_reason",
+      "value": "用于视频通话/拍照"
+    },
+    {
+      "name": "microphone_permission_reason",
+      "value": "用于视频通话/语言输入"
+    },
+    {
+      "name": "background_running_permission_reason",
+      "value": "用于视频通话"
+    },
+    {
+      "name": "capture_screen_permission_reason",
+      "value": "用于视频通话"
+    }
+  ]
+}

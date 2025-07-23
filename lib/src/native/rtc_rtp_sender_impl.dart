@@ -55,7 +55,7 @@ class RTCRtpSenderNative extends RTCRtpSender {
         List<dynamic> reports = response['stats'];
         for (var report in reports) {
           stats.add(StatsReport(report['id'], report['type'],
-              report['timestamp'], report['values']));
+              (report['timestamp'] as num).toDouble(), report['values']));
         }
       }
       return stats;
@@ -139,7 +139,6 @@ class RTCRtpSenderNative extends RTCRtpSender {
 
   @override
   MediaStreamTrack? get track => _track;
-
   @override
   String get senderId => _id;
 

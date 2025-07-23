@@ -3,6 +3,7 @@ import 'dart:io';
 
 import 'package:flutter/foundation.dart';
 import 'package:flutter/material.dart';
+import 'package:flutter/services.dart';
 import 'package:flutter_webrtc/flutter_webrtc.dart';
 import 'package:path_provider/path_provider.dart';
 
@@ -47,7 +48,11 @@ class _GetUserMediaSampleState extends State<GetUserMediaSample> {
   }
 
   void initRenderers() async {
-    await _localRenderer.initialize();
+    try {
+      await _localRenderer.initialize();
+    } catch (e) {
+      print('initRenderers error: $e');
+    }
   }
 
   // Platform messages are asynchronous, so we initialize in an async method.
@@ -72,7 +77,7 @@ class _GetUserMediaSampleState extends State<GetUserMediaSample> {
       _localStream = stream;
       _localRenderer.srcObject = _localStream;
     } catch (e) {
-      print(e.toString());
+      print('getUserMedia error: $e');
     }
     if (!mounted) return;
 
@@ -103,20 +108,24 @@ class _GetUserMediaSampleState extends State<GetUserMediaSample> {
       return;
     }
     // TODO(rostopira): request write storage permission
-    final storagePath = await getExternalStorageDirectory();
-    if (storagePath == null) throw Exception('Can\'t find storagePath');
+    try {
+      final storagePath = await getExternalStorageDirectory();
+      if (storagePath == null) throw Exception('Can\'t find storagePath');
 
-    final filePath = storagePath.path + '/webrtc_sample/test.mp4';
-    _mediaRecorder = MediaRecorder();
-    setState(() {});
+      final filePath = storagePath.path + '/webrtc_sample/test.mp4';
+      _mediaRecorder = MediaRecorder();
+      setState(() {});
 
-    final videoTrack = _localStream!
-        .getVideoTracks()
-        .firstWhere((track) => track.kind == 'video');
-    await _mediaRecorder!.start(
-      filePath,
-      videoTrack: videoTrack,
-    );
+      final videoTrack = _localStream!
+          .getVideoTracks()
+          .firstWhere((track) => track.kind == 'video');
+      await _mediaRecorder!.start(
+        filePath,
+        videoTrack: videoTrack,
+      );
+    } catch (e) {
+      print('recording failed: $e');
+    }
   }
 
   void _stopRecording() async {
@@ -132,24 +141,49 @@ class _GetUserMediaSampleState extends State<GetUserMediaSample> {
     final videoTrack = _localStream!
         .getVideoTracks()
         .firstWhere((track) => track.kind == 'video');
-    final has = await videoTrack.hasTorch();
-    if (has) {
-      print('[TORCH] Current camera supports torch mode');
-      setState(() => _isTorchOn = !_isTorchOn);
-      await videoTrack.setTorch(_isTorchOn);
-      print('[TORCH] Torch state is now ${_isTorchOn ? 'on' : 'off'}');
-    } else {
-      print('[TORCH] Current camera does not support torch mode');
+    try {
+      final has = await videoTrack.hasTorch();
+      if (has) {
+        print('[TORCH] Current camera supports torch mode');
+        setState(() => _isTorchOn = !_isTorchOn);
+        await videoTrack.setTorch(_isTorchOn);
+        print('[TORCH] Torch state is now ${_isTorchOn ? 'on' : 'off'}');
+      } else {
+        print('[TORCH] Current camera does not support torch mode');
+      }
+    } catch (e) {
+      print('toggleTorch failed: $e');
     }
   }
+
+  bool _isFront = false;
 
   void _toggleCamera() async {
     if (_localStream == null) throw Exception('Stream is not initialized');
 
-    final videoTrack = _localStream!
-        .getVideoTracks()
-        .firstWhere((track) => track.kind == 'video');
-    await Helper.switchCamera(videoTrack);
+    if (!WebRTC.platformIsOhos) {
+      final videoTrack = _localStream!
+          .getVideoTracks()
+          .firstWhere((track) => track.kind == 'video');
+      await Helper.switchCamera(videoTrack);
+      return;
+    }
+
+    // 1.stop old stream
+    // 2.update new stream
+    // _localRenderer.srcObject = null;
+    await _localStream?.dispose();
+
+    _isFront = !_isFront;
+    final mediaConstraints = <String, dynamic>{
+      'audio': false,
+      'video': {
+        'facingMode': _isFront ? 'environment' : 'user',
+      }
+    };
+    final stream = await navigator.mediaDevices.getUserMedia(mediaConstraints);
+    _localStream = stream;
+    _localRenderer.srcObject = _localStream;
   }
 
   void _captureFrame() async {
@@ -236,7 +270,11 @@ class _GetUserMediaSampleState extends State<GetUserMediaSample> {
     );
   }
 
-  void _selectAudioOutput(String deviceId) {
-    _localRenderer.audioOutput(deviceId);
+  void _selectAudioOutput(String deviceId) async {
+    try {
+      await _localRenderer.audioOutput(deviceId);
+    } catch (e) {
+      print('selectAudioOutput failed: ${e.toString()}');
+    }
   }
 }

@@ -1,3 +1,4 @@
+import 'dart:async';
 import 'dart:core';
 import 'package:collection/collection.dart';
 
@@ -89,7 +90,7 @@ class _DeviceEnumerationSampleState extends State<DeviceEnumerationSample> {
     pc2 ??= await createPeerConnection({});
     pc1 ??= await createPeerConnection({});
 
-    pc2?.onTrack = (event) {
+    pc2?.onTrack = (RTCTrackEvent event) {
       if (event.track.kind == 'video') {
         _remoteRenderer.srcObject = event.streams[0];
         setState(() {});
@@ -132,7 +133,9 @@ class _DeviceEnumerationSampleState extends State<DeviceEnumerationSample> {
   }
 
   Future<void> loadDevices() async {
-    if (WebRTC.platformIsAndroid || WebRTC.platformIsIOS) {
+    if (WebRTC.platformIsAndroid ||
+        WebRTC.platformIsIOS ||
+        WebRTC.platformIsOhos) {
       //Ask for runtime permissions if necessary.
       var status = await Permission.bluetooth.request();
       if (status.isPermanentlyDenied) {
@@ -144,10 +147,15 @@ class _DeviceEnumerationSampleState extends State<DeviceEnumerationSample> {
         print('ConnectPermdisabled');
       }
     }
-    final devices = await navigator.mediaDevices.enumerateDevices();
-    setState(() {
-      _devices = devices;
-    });
+
+    try {
+      final devices = await navigator.mediaDevices.enumerateDevices();
+      setState(() {
+        _devices = devices;
+      });
+    } catch (e) {
+      print('enumerateDevices error: $e');
+    }
   }
 
   Future<void> _selectVideoFps(String fps) async {
@@ -214,6 +222,9 @@ class _DeviceEnumerationSampleState extends State<DeviceEnumerationSample> {
       await track.stop();
     });
     await _localStream?.dispose();
+    _localStream = null;
+
+    // _remoteRenderer.srcObject = null;
 
     var newLocalStream = await navigator.mediaDevices.getUserMedia({
       'audio': false,
@@ -234,6 +245,7 @@ class _DeviceEnumerationSampleState extends State<DeviceEnumerationSample> {
     // replace track.
     var newTrack = _localStream?.getVideoTracks().first;
     print('track.settings ' + newTrack!.getSettings().toString());
+
     var sender =
         senders.firstWhereOrNull((sender) => sender.track?.kind == 'video');
     var params = sender!.parameters;
@@ -278,8 +290,29 @@ class _DeviceEnumerationSampleState extends State<DeviceEnumerationSample> {
 
       await _negotiate();
       setState(() {});
+
+      _timer = Timer.periodic(Duration(seconds: 10), handleStatsReport);
     } catch (e) {
       print(e.toString());
+    }
+  }
+
+  Timer? _timer;
+  void handleStatsReport(Timer timer) async {
+    if (pc1 != null) {
+      var reports = await pc1?.getStats();
+      reports?.forEach((report) {
+        print('report => { ');
+        print('    id: ' + report.id + ',');
+        print('    type: ' + report.type + ',');
+        print('    timestamp: ${report.timestamp},');
+        print('    values => {');
+        report.values.forEach((key, value) {
+          print('        ' + key + ' : ' + value.toString() + ', ');
+        });
+        print('    }');
+        print('}');
+      });
     }
   }
 
@@ -295,7 +328,9 @@ class _DeviceEnumerationSampleState extends State<DeviceEnumerationSample> {
       senders.clear();
       _inCalling = false;
       await stopPCs();
-      setState(() {});
+      if (mounted) setState(() {});
+      _timer?.cancel();
+      _timer = null;
     } catch (e) {
       print(e.toString());
     }

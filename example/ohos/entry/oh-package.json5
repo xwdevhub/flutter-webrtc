@@ -1,0 +1,15 @@
+{
+  "name": "entry",
+  "version": "1.0.0",
+  "description": "Please describe the basic information.",
+  "main": "",
+  "author": "",
+  "license": "",
+  "dependencies": {
+    "flutter_webrtc": "file:../har/flutter_webrtc.har",
+    "permission_handler_ohos": "file:../har/permission_handler_ohos.har",
+    "path_provider_ohos": "file:../har/path_provider_ohos.har"
+  },
+  "devDependencies": {},
+  "dynamicDependencies": {}
+}

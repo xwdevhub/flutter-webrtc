@@ -5,6 +5,8 @@ import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:flutter_webrtc/flutter_webrtc.dart';
 
+import 'utils.dart';
+
 class LoopBackSampleUnifiedTracks extends StatefulWidget {
   static String tag = 'loopback_sample_unified_tracks';
 
@@ -266,19 +268,19 @@ class _MyAppState extends State<LoopBackSampleUnifiedTracks> {
     initRenderers();
     initLocalConnection();
 
-    var keyProviderOptions = KeyProviderOptions(
-      sharedKey: true,
-      ratchetSalt: Uint8List.fromList(demoRatchetSalt.codeUnits),
-      ratchetWindowSize: 16,
-    );
+    // var keyProviderOptions = KeyProviderOptions(
+    //   sharedKey: true,
+    //   ratchetSalt: Uint8List.fromList(demoRatchetSalt.codeUnits),
+    //   ratchetWindowSize: 16,
+    // );
 
-    _keyProvider ??=
-        await _frameCyrptorFactory.createDefaultKeyProvider(keyProviderOptions);
-    var acaps = await getRtpSenderCapabilities('audio');
-    print('sender audio capabilities: ${acaps.toMap()}');
+    // _keyProvider ??=
+    //     await _frameCyrptorFactory.createDefaultKeyProvider(keyProviderOptions);
+    // var acaps = await getRtpSenderCapabilities('audio');
+    // print('sender audio capabilities: ${acaps.toMap()}');
 
-    var vcaps = await getRtpSenderCapabilities('video');
-    print('sender video capabilities: ${vcaps.toMap()}');
+    // var vcaps = await getRtpSenderCapabilities('video');
+    // print('sender video capabilities: ${vcaps.toMap()}');
 
     if (_remotePeerConnection != null) return;
 
@@ -318,6 +320,10 @@ class _MyAppState extends State<LoopBackSampleUnifiedTracks> {
     if (_remotePeerConnection == null) return;
 
     var offer = await _localPeerConnection!.createOffer({});
+    print('[qjddebug] before offer: ${offer.sdp}');
+    // setPreferredCodec(offer, video: 'vp8');
+    // print('[qjddebug] after offer: ${offer.sdp}');
+
     await _localPeerConnection!.setLocalDescription(offer);
     var localDescription = await _localPeerConnection!.getLocalDescription();
 
@@ -507,7 +513,7 @@ class _MyAppState extends State<LoopBackSampleUnifiedTracks> {
 
     _timer?.cancel();
     _timer = Timer.periodic(Duration(seconds: 1), (timer) async {
-      //handleStatsReport(timer);
+      // handleStatsReport(timer);
     });
   }
 

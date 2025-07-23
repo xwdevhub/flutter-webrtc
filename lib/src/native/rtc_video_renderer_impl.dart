@@ -45,6 +45,8 @@ class RTCVideoRenderer extends ValueNotifier<RTCVideoValue>
   @override
   Function? onFirstFrameRendered;
 
+  bool _isClosed = false;
+
   @override
   set srcObject(MediaStream? stream) {
     if (textureId == null) throw 'Call initialize before setting the stream';
@@ -55,6 +57,7 @@ class RTCVideoRenderer extends ValueNotifier<RTCVideoValue>
       'streamId': stream?.id ?? '',
       'ownerTag': stream?.ownerTag ?? ''
     }).then((_) {
+      if (_isClosed) return;
       value = (stream == null)
           ? RTCVideoValue.empty
           : value.copyWith(renderVideo: renderVideo);
@@ -71,6 +74,7 @@ class RTCVideoRenderer extends ValueNotifier<RTCVideoValue>
       'ownerTag': stream?.ownerTag ?? '',
       'trackId': trackId ?? '0'
     }).then((_) {
+      if (_isClosed) return;
       value = (stream == null)
           ? RTCVideoValue.empty
           : value.copyWith(renderVideo: renderVideo);
@@ -79,6 +83,7 @@ class RTCVideoRenderer extends ValueNotifier<RTCVideoValue>
 
   @override
   Future<void> dispose() async {
+    _isClosed = true;
     await _eventSubscription?.cancel();
     _eventSubscription = null;
     if (_textureId != null) {

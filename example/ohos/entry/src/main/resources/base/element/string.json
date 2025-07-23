@@ -1,0 +1,36 @@
+{
+  "string": [
+    {
+      "name": "module_desc",
+      "value": "module description"
+    },
+    {
+      "name": "EntryAbility_desc",
+      "value": "description"
+    },
+    {
+      "name": "EntryAbility_label",
+      "value": "flutter_webrtc_example"
+    },
+    {
+      "name": "internet_permission_reason",
+      "value": "internet permission"
+    },
+    {
+      "name": "camera_permission_reason",
+      "value": "camera permission"
+    },
+    {
+      "name": "microphone_permission_reason",
+      "value": "microphone permission"
+    },
+    {
+      "name": "background_running_permission_reason",
+      "value": "background running permission"
+    },
+    {
+      "name": "capture_screen_permission_reason",
+      "value": "capture screen running permission"
+    }
+  ]
+}

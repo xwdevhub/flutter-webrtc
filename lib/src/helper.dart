@@ -159,4 +159,17 @@ class Helper {
     }
     track.enabled = !mute;
   }
+
+  static Future<void> createAVSession() async {
+    await WebRTC.invokeMethod('createAVSession');
+  }
+
+  static Future<void> destroyAVSession() async {
+    await WebRTC.invokeMethod('destroyAVSession');
+  }
+
+  static Future<Map<String, dynamic>> getPreferOutputDevice() async {
+    final deviceMap = await WebRTC.invokeMethod('getPreferOutputDevice');
+    return Map<String, dynamic>.from(deviceMap);
+  }
 }

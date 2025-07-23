@@ -37,3 +37,5 @@ flutter:
         pluginClass: FlutterWebRTCPlugin
       linux:
         pluginClass: FlutterWebRTCPlugin
+      ohos:
+        pluginClass: FlutterWebRTCPlugin

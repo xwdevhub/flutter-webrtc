@@ -1,0 +1,41 @@
+{
+  "app": {
+    "signingConfigs": [
+      {
+        "name": "default",
+        "type": "HarmonyOS",
+        "material": {
+          "certpath": "C:\\Users\\dell\\.ohos\\config\\default_ohos_aqHEP4bxx9RyPux2MNOkHxTI3-vVmNB07ohgt3qlcFc=.cer",
+          "keyAlias": "debugKey",
+          "keyPassword": "0000001BE452124DBFA07AC28BCA9A525214E42D0C4C9CC7374FE9A5449BE160763A76D4CF2ADE6BA91F3A",
+          "profile": "C:\\Users\\dell\\.ohos\\config\\default_ohos_aqHEP4bxx9RyPux2MNOkHxTI3-vVmNB07ohgt3qlcFc=.p7b",
+          "signAlg": "SHA256withECDSA",
+          "storeFile": "C:\\Users\\dell\\.ohos\\config\\default_ohos_aqHEP4bxx9RyPux2MNOkHxTI3-vVmNB07ohgt3qlcFc=.p12",
+          "storePassword": "0000001B5F1B93A25F48AB7F635FA0D0155A661CDAE8EEB67300A20629ECC1DDA85F3115045EAE1E8C43BC"
+        }
+      }
+    ],
+    "products": [
+      {
+        "name": "default",
+        "signingConfig": "default",
+        "compatibleSdkVersion": "5.0.3(15)",
+        "runtimeOS": "HarmonyOS"
+      }
+    ]
+  },
+  "modules": [
+    {
+      "name": "entry",
+      "srcPath": "./entry",
+      "targets": [
+        {
+          "name": "default",
+          "applyToProducts": [
+            "default"
+          ]
+        }
+      ]
+    }
+  ]
+}

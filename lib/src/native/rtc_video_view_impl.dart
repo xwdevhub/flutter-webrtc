@@ -1,6 +1,9 @@
+import 'dart:io';
 import 'dart:math';
 
 import 'package:flutter/material.dart';
+import 'package:flutter/services.dart';
+import 'package:flutter_webrtc/flutter_webrtc.dart';
 
 import 'package:webrtc_interface/webrtc_interface.dart';
 
@@ -46,6 +49,13 @@ class RTCVideoView extends StatelessWidget {
               valueListenable: videoRenderer,
               builder:
                   (BuildContext context, RTCVideoValue value, Widget? child) {
+                if (WebRTC.platformIsOhos) {
+                  return SizedBox(
+                    width: constraints.maxWidth,
+                    height: constraints.maxHeight,
+                    child: child,
+                  );
+                }
                 return SizedBox(
                   width: constraints.maxHeight * value.aspectRatio,
                   height: constraints.maxHeight,
@@ -56,11 +66,21 @@ class RTCVideoView extends StatelessWidget {
                 transform: Matrix4.identity()..rotateY(mirror ? -pi : 0.0),
                 alignment: FractionalOffset.center,
                 child: videoRenderer.renderVideo
-                    ? Texture(
-                        textureId: videoRenderer.textureId!,
-                        filterQuality: filterQuality,
-                      )
-                    : placeholderBuilder?.call(context) ?? Container(),
+                    ? WebRTC.platformIsOhos
+                        ? OhosView(
+                            viewType: 'FlutterWebRTC/RTCVideoView',
+                            onPlatformViewCreated: (viewId) {},
+                            creationParams: {
+                              'textureId': videoRenderer.textureId!
+                            },
+                            creationParamsCodec: const StandardMessageCodec(),
+                          )
+                        : Texture(
+                            textureId: videoRenderer.textureId!,
+                            filterQuality: filterQuality,
+                          )
+                    : placeholderBuilder?.call(context) ??
+                        Container(color: Colors.black),
               ),
             ),
           ),

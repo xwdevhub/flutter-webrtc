@@ -14,7 +14,10 @@ class WebRTC {
 
   static bool get platformIsLinux => Platform.isLinux;
 
-  static bool get platformIsMobile => Platform.isIOS || Platform.isAndroid;
+  static bool get platformIsOhos => Platform.operatingSystem == "ohos";
+
+  static bool get platformIsMobile =>
+      Platform.isIOS || Platform.isAndroid || platformIsOhos;
 
   static bool get platformIsIOS => Platform.isIOS;
 
