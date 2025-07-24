@@ -1,11 +1,9 @@
 import { Any, BinaryMessenger, EventChannel, EventSink, Log, StreamHandler, TextureRegistry } from "@ohos/flutter_ohos";
 import webrtc from "@xw/webrtc";
-import { contextUtils, dump } from "./Utils";
+import { dump } from "./Utils";
 import { audio } from "@kit.AudioKit";
 import { BusinessError } from "@kit.BasicServicesKit";
 import { FlutterPeerConnectionObserver } from "./FlutterPeerconnection";
-import { JSON } from "@kit.ArkTS";
-import { avSession } from "@kit.AVSessionKit";
 
 const TAG = "FlutterWebrtcBase";
 
@@ -21,9 +19,9 @@ export default class FlutterWebrtcBase implements StreamHandler {
   public peerconnectionObservers: Map<string, FlutterPeerConnectionObserver> = new Map();
   public factory?: webrtc.PeerConnectionFactory;
   public adm?: webrtc.AudioDeviceModule;
+  public mediaDevices = new webrtc.MediaDevices();
   private eventChannel: EventChannel;
   private eventSink: EventSink | null = null;
-  private avSession?: avSession.AVSession;
 
   constructor(registry: TextureRegistry, messenger: BinaryMessenger) {
     this.registry = registry;

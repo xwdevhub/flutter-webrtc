@@ -172,4 +172,12 @@ class Helper {
     final deviceMap = await WebRTC.invokeMethod('getPreferOutputDevice');
     return Map<String, dynamic>.from(deviceMap);
   }
+
+  static Future<void> startBackgroundRunning() async {
+    await WebRTC.invokeMethod('startBackgroundRunning');
+  }
+
+  static Future<void> stopBackgroundRunning() async {
+    await WebRTC.invokeMethod('stopBackgroundRunning');
+  }
 }

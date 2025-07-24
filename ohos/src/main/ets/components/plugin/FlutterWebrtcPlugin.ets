@@ -11,10 +11,11 @@ import {
 import FlutterMediaStream from './FlutterMediaStream';
 import webrtc, { LoggingSeverity } from '@xw/webrtc';
 import { FlutterVideoRendererManager } from './FlutterVideoRenderer';
-import { dump, findArray, findBool, findMap, findNumber, findString, findValue, getString, JsonMap } from './Utils';
+import { dump, findArray, findBool, findMap, findNumber, findString, findValue, getString } from './Utils';
 import FlutterWebrtcBase from './FlutterWebrtcBase';
 import FlutterPeerconnection from './FlutterPeerconnection';
 import FlutterAudioUtils, { RTCAVCastPickerFactory } from './FlutterAudioUtils';
+import FlutterScreenCapture from './FlutterScreenCapture';
 
 const TAG = "FlutterWebrtcPlugin";
 
@@ -28,6 +29,7 @@ export default class FlutterWebrtcPlugin implements FlutterPlugin, MethodCallHan
   private videoRendererManager?: FlutterVideoRendererManager;
   private peerconnection?: FlutterPeerconnection;
   private audioUtils?: FlutterAudioUtils;
+  private screenCapture?: FlutterScreenCapture;
 
   constructor() {
     // `Logging.enableLogToDebugOutput(Logging.Severity.LS_INFO)`.
@@ -47,6 +49,7 @@ export default class FlutterWebrtcPlugin implements FlutterPlugin, MethodCallHan
     this.mediaStream = new FlutterMediaStream(this.base);
     this.peerconnection = new FlutterPeerconnection(this.base);
     this.audioUtils = new FlutterAudioUtils();
+    this.screenCapture = new FlutterScreenCapture(this.base);
 
     this.channel = new MethodChannel(binding.getBinaryMessenger(), "FlutterWebRTC.Method");
     this.channel.setMethodCallHandler(this);
@@ -390,6 +393,17 @@ export default class FlutterWebrtcPlugin implements FlutterPlugin, MethodCallHan
       this.audioUtils?.destroyAVSession(result);
     } else if (call.method == "getPreferOutputDevice") {
       this.mediaStream?.getPreferOutputDevice(result);
+    } else if (call.method == "getDisplayMedia") {
+      if (!call.args) {
+        result.error("Bad Arguments", "Null constraints arguments received", null);
+        return;
+      }
+      let constraints: Map<string, Any> = findMap(call.args, "constraints");
+      this.screenCapture?.getDisplayMedia(constraints, result);
+    } else if (call.method == "startBackgroundRunning") {
+      this.screenCapture?.startBackgroundRunning(result);
+    } else if (call.method == "stopBackgroundRunning") {
+      this.screenCapture?.stopBackgroundRunning(result);
     } else {
       const errMsg = call.method + ' not implemented';
       Log.e(TAG, errMsg);

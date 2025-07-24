@@ -82,6 +82,8 @@ class _GetDisplayMediaSampleState extends State<GetDisplayMediaSample> {
         }
 
         await requestBackgroundPermission();
+      } else if (WebRTC.platformIsOhos) {
+        await Helper.startBackgroundRunning();
       }
       await _makeCall(null);
     }
@@ -130,6 +132,9 @@ class _GetDisplayMediaSampleState extends State<GetDisplayMediaSample> {
       _localRenderer.srcObject = null;
     } catch (e) {
       print(e.toString());
+    }
+    if (WebRTC.platformIsOhos) {
+     await Helper.stopBackgroundRunning();
     }
   }
 

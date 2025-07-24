@@ -262,6 +262,10 @@ class _DeviceEnumerationSampleState extends State<DeviceEnumerationSample> {
   }
 
   Future<void> _start() async {
+    if (WebRTC.platformIsOhos) {
+      await Helper.startBackgroundRunning();
+    }
+
     try {
       _localStream = await navigator.mediaDevices.getUserMedia({
         'audio': true,
@@ -333,6 +337,10 @@ class _DeviceEnumerationSampleState extends State<DeviceEnumerationSample> {
       _timer = null;
     } catch (e) {
       print(e.toString());
+    }
+    
+    if (WebRTC.platformIsOhos) {
+      await Helper.stopBackgroundRunning();
     }
   }
 
