@@ -404,6 +404,10 @@ export default class FlutterWebrtcPlugin implements FlutterPlugin, MethodCallHan
       this.screenCapture?.startBackgroundRunning(result);
     } else if (call.method == "stopBackgroundRunning") {
       this.screenCapture?.stopBackgroundRunning(result);
+    } else if (call.method == "activateAudioSession") {
+      this.audioUtils?.activateAudioSession(result);
+    } else if (call.method == "deactivateAudioSession") {
+      this.audioUtils?.deactivateAudioSession(result);
     } else {
       const errMsg = call.method + ' not implemented';
       Log.e(TAG, errMsg);

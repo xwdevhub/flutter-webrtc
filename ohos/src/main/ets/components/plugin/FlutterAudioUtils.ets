@@ -19,6 +19,7 @@ import {
   avSession
 } from "@kit.AVSessionKit";
 import { audio } from "@kit.AudioKit";
+import { BusinessError } from "@kit.BasicServicesKit";
 
 const TAG = "FlutterAudioUtils";
 
@@ -35,13 +36,48 @@ export default class FlutterAudioUtils {
       Log.i(TAG, 'createAVSession SUCCESS');
       result.success(null);
     } catch (error) {
-      Log.e(TAG, `ERROR: ${error}`);
+      Log.e(TAG, `createAVSession ERROR: ${error}`);
       result.error('createAVSession failed', `${error}`, null);
     }
   }
 
-  public destroyAVSession(result: MethodResult) {
-    this.avSession?.destroy();
+  public async destroyAVSession(result: MethodResult) {
+    try {
+      await this.avSession?.destroy();
+      Log.i(TAG, 'destroyAVSession SUCCESS');
+      result.success(null);
+    } catch (error) {
+      Log.e(TAG, `destroyAVSession ERROR: ${error}`);
+      result.error('destroyAVSession failed', `${error}`, null);
+    }
+  }
+
+  public activateAudioSession(result: MethodResult) {
+    // 设置音频策略，允许和其它音频流并发
+    let strategy: audio.AudioSessionStrategy = {
+      concurrencyMode: audio.AudioConcurrencyMode.CONCURRENCY_MIX_WITH_OTHERS
+    };
+    let audioManager = audio.getAudioManager();
+    let audioSessionManager = audioManager.getSessionManager();
+    audioSessionManager.activateAudioSession(strategy).then(() => {
+      Log.i(TAG, 'activateAudioSession SUCCESS');
+      result.success(null);
+    }).catch((err: BusinessError) => {
+      Log.e(TAG, `activateAudioSession ERROR: ${err}`);
+      result.error("activateAudioSession Failed", `${err}`, null);
+    });
+  }
+
+  public deactivateAudioSession(result: MethodResult) {
+    let audioManager = audio.getAudioManager();
+    let audioSessionManager = audioManager.getSessionManager();
+    audioSessionManager.deactivateAudioSession().then(() => {
+      Log.i(TAG, 'deactivateAudioSession SUCCESS');
+      result.success(null);
+    }).catch((err: BusinessError) => {
+      Log.e(TAG, `deactivateAudioSession ERROR: ${err}`);
+      result.error("deactivateAudioSession Failed", `${err}`, null);
+    });
   }
 }
 

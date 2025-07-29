@@ -1,8 +1,6 @@
 import { Any, BinaryMessenger, EventChannel, EventSink, Log, StreamHandler, TextureRegistry } from "@ohos/flutter_ohos";
 import webrtc from "@xw/webrtc";
 import { dump } from "./Utils";
-import { audio } from "@kit.AudioKit";
-import { BusinessError } from "@kit.BasicServicesKit";
 import { FlutterPeerConnectionObserver } from "./FlutterPeerconnection";
 
 const TAG = "FlutterWebrtcBase";
@@ -26,18 +24,6 @@ export default class FlutterWebrtcBase implements StreamHandler {
   constructor(registry: TextureRegistry, messenger: BinaryMessenger) {
     this.registry = registry;
     this.messenger = messenger;
-
-    // 设置音频策略，允许和其它音频流并发
-    let strategy: audio.AudioSessionStrategy = {
-      concurrencyMode: audio.AudioConcurrencyMode.CONCURRENCY_MIX_WITH_OTHERS
-    };
-    let audioManager = audio.getAudioManager();
-    let audioSessionManager = audioManager.getSessionManager();
-    audioSessionManager.activateAudioSession(strategy).then(() => {
-      Log.i(TAG, 'activateAudioSession SUCCESS');
-    }).catch((err: BusinessError) => {
-      Log.e(TAG, `ERROR: ${err}`);
-    });
 
     this.createAudioDeviceModule();
     this.createPeerConnectionFactory();

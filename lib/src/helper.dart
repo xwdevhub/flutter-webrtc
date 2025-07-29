@@ -160,6 +160,14 @@ class Helper {
     track.enabled = !mute;
   }
 
+  static Future<void> activateAudioSession() async {
+    await WebRTC.invokeMethod('activateAudioSession');
+  }
+
+  static Future<void> deactivateAudioSession() async {
+    await WebRTC.invokeMethod('deactivateAudioSession');
+  }
+
   static Future<void> createAVSession() async {
     await WebRTC.invokeMethod('createAVSession');
   }
