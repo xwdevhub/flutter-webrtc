@@ -37,6 +37,10 @@ class FlutterPeerConnectionObserver : public RTCPeerConnectionObserver {
 
   void RemoveStreamForId(const std::string& id);
 
+  const std::map<std::string, scoped_refptr<RTCMediaStream>>& RemoteStreams() const {
+    return remote_streams_;
+  }
+
  private:
   std::unique_ptr<EventChannelProxy> event_channel_;
   scoped_refptr<RTCPeerConnection> peerconnection_;

@@ -9,6 +9,7 @@
 #include "flutter_peerconnection.h"
 #include "flutter_screen_capture.h"
 #include "flutter_video_renderer.h"
+#include "flutter_media_recorder.h"
 
 #include "libwebrtc.h"
 
@@ -29,7 +30,8 @@ class FlutterWebRTC : public FlutterWebRTCBase,
                       public FlutterPeerConnection,
                       public FlutterScreenCapture,
                       public FlutterDataChannel,
-                      public FlutterFrameCryptor {
+                      public FlutterFrameCryptor,
+                      public FlutterMediaRecorder {
  public:
   FlutterWebRTC(FlutterWebRTCPlugin* plugin);
   virtual ~FlutterWebRTC();

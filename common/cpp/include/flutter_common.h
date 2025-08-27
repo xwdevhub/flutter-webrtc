@@ -10,10 +10,15 @@
 #include <flutter/standard_method_codec.h>
 #include <flutter/texture_registrar.h>
 
+#include <algorithm>
+#include <chrono>
+#include <condition_variable>
 #include <list>
 #include <memory>
-#include <string>
+#include <mutex>
 #include <optional>
+#include <queue>
+#include <string>
 
 typedef flutter::EncodableValue EncodableValue;
 typedef flutter::EncodableMap EncodableMap;
@@ -90,7 +95,8 @@ inline double findDouble(const EncodableMap& map, const std::string& key) {
   return 0.0;
 }
 
-inline std::optional<double> maybeFindDouble(const EncodableMap& map, const std::string& key) {
+inline std::optional<double> maybeFindDouble(const EncodableMap& map,
+                                             const std::string& key) {
   auto it = map.find(EncodableValue(key));
   if (it != map.end() && TypeIs<double>(it->second))
     return GetValue<double>(it->second);

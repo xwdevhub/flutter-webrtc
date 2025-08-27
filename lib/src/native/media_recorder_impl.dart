@@ -1,4 +1,5 @@
 import 'dart:async';
+import 'dart:io';
 import 'dart:math';
 
 import 'package:webrtc_interface/webrtc_interface.dart';
@@ -15,8 +16,10 @@ class MediaRecorderNative extends MediaRecorder {
       {MediaStreamTrack? videoTrack, RecorderAudioChannel? audioChannel
       // TODO(cloudwebrtc): add codec/quality options
       }) async {
-    if (audioChannel == null && videoTrack == null) {
-      throw Exception('Neither audio nor video track were provided');
+    if (!Platform.isWindows) {
+      if (audioChannel == null && videoTrack == null) {
+        throw Exception('Neither audio nor video track were provided');
+      }
     }
 
     await WebRTC.invokeMethod('startRecordToFile', {

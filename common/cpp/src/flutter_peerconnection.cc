@@ -6,6 +6,8 @@
 #include "rtc_dtmf_sender.h"
 #include "rtc_rtp_parameters.h"
 
+#include "flutter_remote_track_observer.h"
+
 namespace flutter_webrtc_plugin {
 
 std::string RTCMediaTypeToString(RTCMediaType type) {
@@ -1127,7 +1129,6 @@ FlutterPeerConnectionObserver::FlutterPeerConnectionObserver(
   peerconnection->RegisterRTCPeerConnectionObserver(this);
 }
 
-
 void FlutterPeerConnectionObserver::OnSignalingState(RTCSignalingState state) {
   EncodableMap params;
   params[EncodableValue("event")] = "signalingState";
@@ -1142,7 +1143,6 @@ void FlutterPeerConnectionObserver::OnPeerConnectionState(
   params[EncodableValue("state")] = peerConnectionStateString(state);
   event_channel_->Success(EncodableValue(params));
 }
-
 
 void FlutterPeerConnectionObserver::OnIceGatheringState(
     RTCIceGatheringState state) {
@@ -1279,6 +1279,11 @@ void FlutterPeerConnectionObserver::OnTrack(
       EncodableValue(transceiverToMap(transceiver));
 
   event_channel_->Success(EncodableValue(params));
+
+  auto track = receiver->track();
+  for (auto* observer : base_->remote_track_observers_) {
+    observer->OnAddTrack(track.get());
+  }
 }
 
 void FlutterPeerConnectionObserver::OnRemoveTrack(
@@ -1292,6 +1297,10 @@ void FlutterPeerConnectionObserver::OnRemoveTrack(
   params[EncodableValue("receiver")] =
       EncodableValue(rtpReceiverToMap(receiver));
   event_channel_->Success(EncodableValue(params));
+
+  for (auto* observer : base_->remote_track_observers_) {
+    observer->OnRemoveTrack(track.get());
+  }
 }
 
 // void FlutterPeerConnectionObserver::OnRemoveTrack(

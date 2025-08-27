@@ -18,6 +18,7 @@ class RTCPeerConnection;
 class RTCAudioDevice;
 class RTCVideoDevice;
 class RTCRtpCapabilities;
+class RTCLocalAudioTrackObserver;
 
 class RTCPeerConnectionFactory : public RefCountInterface {
  public:
@@ -63,6 +64,25 @@ class RTCPeerConnectionFactory : public RefCountInterface {
 
   virtual scoped_refptr<RTCRtpCapabilities> GetRtpReceiverCapabilities(
       RTCMediaType media_type) = 0;
+
+  virtual void RegisterLocalAudioTrackObserver(RTCLocalAudioTrackObserver* observer) = 0;
+
+  virtual void UnregisterLocalAudioTrackObserver(RTCLocalAudioTrackObserver* observer) = 0;
+};
+
+/**
+ * @brief 本地音频数据观察者接口。
+ * 库的使用者可以实现这个接口，以接收经过 APM 处理后的本地麦克风数据。
+ */
+class RTCLocalAudioTrackObserver {
+ public:
+  virtual ~RTCLocalAudioTrackObserver() = default;
+
+  virtual void OnProcessedData(const int16_t* audio_data,
+                               int sample_rate,
+                               size_t number_of_channels,
+                               size_t number_of_frames,
+                               int64_t absolute_capture_timestamp_ms) = 0;
 };
 
 }  // namespace libwebrtc

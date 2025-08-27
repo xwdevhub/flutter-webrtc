@@ -12,7 +12,8 @@ FlutterWebRTC::FlutterWebRTC(FlutterWebRTCPlugin* plugin)
       FlutterPeerConnection::FlutterPeerConnection(this),
       FlutterScreenCapture::FlutterScreenCapture(this),
       FlutterDataChannel::FlutterDataChannel(this),
-      FlutterFrameCryptor::FlutterFrameCryptor(this) {}
+      FlutterFrameCryptor::FlutterFrameCryptor(this),
+      FlutterMediaRecorder::FlutterMediaRecorder(this) {}
 
 FlutterWebRTC::~FlutterWebRTC() {}
 
@@ -1251,6 +1252,17 @@ void FlutterWebRTC::HandleMethodCall(
     state[EncodableValue("state")] =
         peerConnectionStateString(pc->peer_connection_state());
     result->Success(EncodableValue(state));
+  } else if (method_call.method_name().compare("startRecordToFile") == 0) {
+    const EncodableMap params =
+        GetValue<EncodableMap>(*method_call.arguments());
+    const std::string filepath = findString(params, "path");
+    StartRecordToFile(filepath, std::move(result));
+  } else if (method_call.method_name().compare("stopRecordToFile") == 0) {
+    StopRecordToFile(std::move(result));
+  } else if (method_call.method_name().compare("transRecordToFile") == 0) {
+    const EncodableMap params =
+        GetValue<EncodableMap>(*method_call.arguments());
+    TransRecordToFile(findString(params, "path"), std::move(result));
   } else {
     if (HandleFrameCryptorMethodCall(method_call, std::move(result), &result)) {
       return;

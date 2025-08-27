@@ -56,3 +56,8 @@ android/.settings/org.eclipse.buildship.core.prefs
 
 # vs
 *.pdb
+
+# AI
+.kilocode
+.spec-workflow
+.amazonq

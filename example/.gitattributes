@@ -1,0 +1,2 @@
+third_party/ffmpeg/lib/*.dll filter=lfs diff=lfs merge=lfs -text
+third_party/ffmpeg/lib/*.lib filter=lfs diff=lfs merge=lfs -text

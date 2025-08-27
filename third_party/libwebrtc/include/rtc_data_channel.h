@@ -54,6 +54,8 @@ class RTCDataChannelObserver {
    */
   virtual void OnMessage(const char* buffer, int length, bool binary) = 0;
 
+  virtual void OnBufferedAmountChange(uint64_t sent_data_size) = 0;
+
  protected:
   /**
    * The destructor for the RTCDataChannelObserver class.
@@ -107,6 +109,8 @@ class RTCDataChannel : public RefCountInterface {
    * Returns the state of the data channel.
    */
   virtual RTCDataChannelState state() = 0;
+
+  virtual uint64_t buffered_amount() const = 0;
 
  protected:
   virtual ~RTCDataChannel() {}

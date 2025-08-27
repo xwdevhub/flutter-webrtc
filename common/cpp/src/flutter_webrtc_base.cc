@@ -1,5 +1,7 @@
 #include "flutter_webrtc_base.h"
 
+#include <iostream>
+
 #include "flutter_data_channel.h"
 #include "flutter_peerconnection.h"
 
@@ -86,7 +88,8 @@ void FlutterWebRTCBase::RemovePeerConnectionObserversForId(
 }
 
 scoped_refptr<RTCMediaStream> FlutterWebRTCBase::MediaStreamForId(
-    const std::string& id, std::string ownerTag) {
+    const std::string& id,
+    std::string ownerTag) {
   if (!ownerTag.empty()) {
     if (ownerTag == "local") {
       auto it = local_streams_.find(id);
@@ -346,8 +349,7 @@ FlutterWebRTCBase::GetRtpSenderById(RTCPeerConnection* pc, std::string id) {
 }
 
 libwebrtc::scoped_refptr<libwebrtc::RTCRtpReceiver>
-FlutterWebRTCBase::GetRtpReceiverById(RTCPeerConnection* pc,
-                                          std::string id) {
+FlutterWebRTCBase::GetRtpReceiverById(RTCPeerConnection* pc, std::string id) {
   libwebrtc::scoped_refptr<libwebrtc::RTCRtpReceiver> result;
   auto receivers = pc->receivers();
   for (scoped_refptr<RTCRtpReceiver> item : receivers.std_vector()) {
@@ -357,6 +359,22 @@ FlutterWebRTCBase::GetRtpReceiverById(RTCPeerConnection* pc,
     }
   }
   return result;
+}
+
+void FlutterWebRTCBase::RegisterRemoteTrackObserver(
+    FlutterRemoteTrackObserver* observer) {
+  remote_track_observers_.push_back(observer);
+}
+
+void FlutterWebRTCBase::UnregisterRemoteTrackObserver(
+    FlutterRemoteTrackObserver* observer) {
+  for (auto it = remote_track_observers_.begin();
+       it != remote_track_observers_.end(); ++it) {
+    if (observer == *it) {
+      remote_track_observers_.erase(it);
+      return;
+    }
+  }
 }
 
 }  // namespace flutter_webrtc_plugin

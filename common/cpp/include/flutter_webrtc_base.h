@@ -31,6 +31,8 @@ class FlutterVideoRenderer;
 class FlutterRTCDataChannelObserver;
 class FlutterPeerConnectionObserver;
 
+class FlutterRemoteTrackObserver;
+
 class FlutterWebRTCBase {
  public:
   friend class FlutterMediaStream;
@@ -40,6 +42,8 @@ class FlutterWebRTCBase {
   friend class FlutterPeerConnectionObserver;
   friend class FlutterScreenCapture;
   friend class FlutterFrameCryptor;
+  friend class FlutterMediaRecorder;
+  friend class FlutterAudioRecorder;
   enum ParseConstraintType { kMandatory, kOptional };
 
  public:
@@ -82,7 +86,6 @@ class FlutterWebRTCBase {
 
   EventChannelProxy* event_channel();
 
-
   libwebrtc::scoped_refptr<libwebrtc::RTCRtpSender> GetRtpSenderById(
       RTCPeerConnection* pc,
       std::string id);
@@ -124,6 +127,11 @@ class FlutterWebRTCBase {
   BinaryMessenger* messenger_;
   TextureRegistrar* textures_;
   std::unique_ptr<EventChannelProxy> event_channel_;
+
+ private:
+  std::vector<FlutterRemoteTrackObserver*> remote_track_observers_;
+  void RegisterRemoteTrackObserver(FlutterRemoteTrackObserver* observer);
+  void UnregisterRemoteTrackObserver(FlutterRemoteTrackObserver* observer);
 };
 
 }  // namespace flutter_webrtc_plugin
