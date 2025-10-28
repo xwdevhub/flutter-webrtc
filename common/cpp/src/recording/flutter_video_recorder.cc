@@ -1,10 +1,14 @@
 #include "flutter_video_recorder.h"
+
 #include <windows.h>
 #include <chrono>
 #include <cstring>
+#include <filesystem>
 #include <iostream>
+
 #include "flutter_media_recorder.h"
 #include "flutter_webrtc_logging.h"
+#include "utils.h"
 
 namespace flutter_webrtc_plugin {
 FlutterVideoRecorder::FlutterVideoRecorder(FlutterWebRTCBase* base,
@@ -28,8 +32,16 @@ bool FlutterVideoRecorder::Start(const std::string& filepath) {
 
   {
     std::lock_guard<std::mutex> lock(output_file_mutex_);
-    output_file_.open(filepath, std::ofstream::binary | std::ofstream::out |
-                                    std::ofstream::app);
+
+#if defined(WIN32) || defined(_WINDOWS)
+    std::wstring wpath = utf8_to_wstring(filepath);
+    std::filesystem::path path(wpath);
+    output_file_.open(path, std::ios::binary | std::ios::out | std::ios::app);
+#else
+    output_file_.open(filepath,
+                      std::ios::binary | std::ios::out | std::ios::app);
+#endif
+
     if (!output_file_.is_open()) {
       RTC_LOG(LS_ERROR) << "Failed to open output file: " << filepath;
       return false;
@@ -119,7 +131,11 @@ void FlutterVideoRecorder::Pause() {
 
   state_ = RecordingState::kPaused;
 
-  recorder_->Stop();
+  if (recorder_) {
+    recorder_->Stop();
+    recorder_->UnregisterObserver();
+    recorder_ = nullptr;
+  }
 
   RTC_LOG(LS_INFO) << "Recording paused";
 }
@@ -137,6 +153,8 @@ void FlutterVideoRecorder::Resume() {
   // 2. 唤醒正在等待的 ProcessThread
   state_cv_.notify_one();
 
+  recorder_ = recorder_factory_->CreateWindowRecorder(source_id_);
+  recorder_->RegisterObserver(this);
   recorder_->Start(output_format_.fps);
 }
 

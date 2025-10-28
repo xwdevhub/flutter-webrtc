@@ -88,200 +88,208 @@ H264Encoder::~H264Encoder() {
 
 bool H264Encoder::InitializeEncoder(int width, int height) {
   // 优先尝试硬件编码器
-  const char* hardware_codecs[] = {"h264_nvenc", "h264_qsv", "h264_vaapi",
-                                   "h264_vulkan"};
+  // const char* hardware_codecs[] = {"h264_nvenc", "h264_qsv", "h264_vaapi",
+  //                                  "h264_vulkan"};
   const char* fallback_codec = "libx264";
 
   const AVCodec* codec = nullptr;
   bool encoder_found = false;
 
   // 尝试硬件编码器
-  for (const char* codec_name : hardware_codecs) {
-    codec = avcodec_find_encoder_by_name(codec_name);
-    if (!codec) {
-      RTC_LOG(LS_DEBUG) << "Encoder not found: " << codec_name;
-      continue;
-    }
+  // for (const char* codec_name : hardware_codecs) {
+  //   codec = avcodec_find_encoder_by_name(codec_name);
+  //   if (!codec) {
+  //     RTC_LOG(LS_DEBUG) << "Encoder not found: " << codec_name;
+  //     continue;
+  //   }
 
-    RTC_LOG(LS_DEBUG) << "Found encoder: " << codec_name
-                      << ", capabilities: " << codec->capabilities;
+  //   RTC_LOG(LS_DEBUG) << "Found encoder: " << codec_name
+  //                     << ", capabilities: " << codec->capabilities;
 
-    codec_context_.reset(avcodec_alloc_context3(codec));
-    if (!codec_context_) {
-      RTC_LOG(LS_ERROR) << "Failed to allocate codec context for "
-                        << codec_name;
-      continue;
-    }
+  //   codec_context_.reset(avcodec_alloc_context3(codec));
+  //   if (!codec_context_) {
+  //     RTC_LOG(LS_ERROR) << "Failed to allocate codec context for "
+  //                       << codec_name;
+  //     continue;
+  //   }
 
-    codec_context_->width = width;
-    codec_context_->height = height;
-    codec_context_->bit_rate = output_format_.bit_rate;
-    codec_context_->time_base = {1, (int)output_format_.fps};
-    codec_context_->framerate = {(int)output_format_.fps, 1};
-    codec_context_->gop_size = output_format_.fps * 2;  // I-frame interval
-    codec_context_->max_b_frames = 0;                   // 禁用b帧
-    codec_context_->codec_type = AVMEDIA_TYPE_VIDEO;
-    // 像素格式稍后根据硬件配置设置
+  //   codec_context_->width = width;
+  //   codec_context_->height = height;
+  //   codec_context_->bit_rate = output_format_.bit_rate;
+  //   codec_context_->time_base = {1, (int)output_format_.fps};
+  //   codec_context_->framerate = {(int)output_format_.fps, 1};
+  //   codec_context_->gop_size = output_format_.fps * 2;  // I-frame interval
+  //   codec_context_->max_b_frames = 0;                   // 禁用b帧
+  //   codec_context_->codec_type = AVMEDIA_TYPE_VIDEO;
+  //   // 像素格式稍后根据硬件配置设置
 
-    // 检查硬件编码器是否需要硬件帧上下文
-    if (codec->capabilities & AV_CODEC_CAP_HARDWARE) {
-      RTC_LOG(LS_DEBUG)
-          << "Hardware encoder detected, initializing hardware contexts.";
+  //   // 检查硬件编码器是否需要硬件帧上下文
+  //   if (codec->capabilities & AV_CODEC_CAP_HARDWARE) {
+  //     RTC_LOG(LS_DEBUG)
+  //         << "Hardware encoder detected, initializing hardware contexts.";
 
-      // 获取硬件设备类型
-      AVHWDeviceType hw_device_type = GetHWDeviceType(codec_name);
-      if (hw_device_type == AV_HWDEVICE_TYPE_NONE) {
-        RTC_LOG(LS_WARNING)
-            << "Unknown hardware device type for codec: " << codec_name;
-        continue;
-      }
+  //     // 获取硬件设备类型
+  //     AVHWDeviceType hw_device_type = GetHWDeviceType(codec_name);
+  //     if (hw_device_type == AV_HWDEVICE_TYPE_NONE) {
+  //       RTC_LOG(LS_WARNING)
+  //           << "Unknown hardware device type for codec: " << codec_name;
+  //       continue;
+  //     }
 
-      // 检查硬件设备是否可用
-      if (!IsHWDeviceAvailable(hw_device_type, codec_name)) {
-        continue;
-      }
+  //     // 检查硬件设备是否可用
+  //     if (!IsHWDeviceAvailable(hw_device_type, codec_name)) {
+  //       continue;
+  //     }
 
-      // 创建硬件设备上下文
-      AVBufferRef* hw_device_ctx_raw = nullptr;
-      int ret = av_hwdevice_ctx_create(&hw_device_ctx_raw, hw_device_type,
-                                       nullptr, nullptr, 0);
-      if (ret < 0) {
-        // IsHWDeviceAvailable 已经记录了详细的错误信息，这里只需要跳过
-        continue;
-      }
-      hw_device_ctx_.reset(hw_device_ctx_raw);
+  //     // 创建硬件设备上下文
+  //     AVBufferRef* hw_device_ctx_raw = nullptr;
+  //     int ret = av_hwdevice_ctx_create(&hw_device_ctx_raw, hw_device_type,
+  //                                      nullptr, nullptr, 0);
+  //     if (ret < 0) {
+  //       // IsHWDeviceAvailable 已经记录了详细的错误信息，这里只需要跳过
+  //       continue;
+  //     }
+  //     hw_device_ctx_.reset(hw_device_ctx_raw);
 
-      // 设置编码器上下文的硬件设备上下文
-      codec_context_->hw_device_ctx = av_buffer_ref(hw_device_ctx_raw);
+  //     // 设置编码器上下文的硬件设备上下文
+  //     codec_context_->hw_device_ctx = av_buffer_ref(hw_device_ctx_raw);
 
-      // 获取硬件配置以确定正确的像素格式
-      const AVCodecHWConfig* config = nullptr;
-      bool config_found = false;
-      for (int i = 0; (config = avcodec_get_hw_config(codec, i)); ++i) {
-        if (config->device_type == hw_device_type) {
-          config_found = true;
-          break;
-        }
-      }
+  //     // 获取硬件配置以确定正确的像素格式
+  //     const AVCodecHWConfig* config = nullptr;
+  //     bool config_found = false;
+  //     for (int i = 0; (config = avcodec_get_hw_config(codec, i)); ++i) {
+  //       if (config->device_type == hw_device_type) {
+  //         config_found = true;
+  //         break;
+  //       }
+  //     }
 
-      if (!config_found || !config) {
-        RTC_LOG(LS_WARNING)
-            << "No suitable hardware config found for " << codec_name
-            << " with device " << av_hwdevice_get_type_name(hw_device_type);
-        hw_device_ctx_.reset();
-        continue;
-      }
+  //     if (!config_found || !config) {
+  //       RTC_LOG(LS_WARNING)
+  //           << "No suitable hardware config found for " << codec_name
+  //           << " with device " << av_hwdevice_get_type_name(hw_device_type);
+  //       hw_device_ctx_.reset();
+  //       continue;
+  //     }
 
-      // 设置编码器像素格式为硬件格式
-      codec_context_->pix_fmt = config->pix_fmt;
+  //     // 设置编码器像素格式为硬件格式
+  //     codec_context_->pix_fmt = config->pix_fmt;
 
-      // 创建硬件帧上下文
-      AVBufferRef* hw_frames_ctx_raw = av_hwframe_ctx_alloc(hw_device_ctx_raw);
-      if (!hw_frames_ctx_raw) {
-        RTC_LOG(LS_WARNING)
-            << "Failed to allocate hardware frames context for " << codec_name;
-        hw_device_ctx_.reset();
-        continue;
-      }
-      hw_frames_ctx_.reset(hw_frames_ctx_raw);
+  //     // 创建硬件帧上下文
+  //     AVBufferRef* hw_frames_ctx_raw =
+  //     av_hwframe_ctx_alloc(hw_device_ctx_raw); if (!hw_frames_ctx_raw) {
+  //       RTC_LOG(LS_WARNING)
+  //           << "Failed to allocate hardware frames context for " <<
+  //           codec_name;
+  //       hw_device_ctx_.reset();
+  //       continue;
+  //     }
+  //     hw_frames_ctx_.reset(hw_frames_ctx_raw);
 
-      // 配置硬件帧上下文
-      AVHWFramesContext* frames_ctx =
-          (AVHWFramesContext*)hw_frames_ctx_raw->data;
-      frames_ctx->format = config->pix_fmt;
-      frames_ctx->sw_format = AV_PIX_FMT_YUV420P;  // 输入格式
-      frames_ctx->width = width;
-      frames_ctx->height = height;
-      frames_ctx->initial_pool_size = 20;  // 设置初始池大小
+  //     // 配置硬件帧上下文
+  //     AVHWFramesContext* frames_ctx =
+  //         (AVHWFramesContext*)hw_frames_ctx_raw->data;
+  //     frames_ctx->format = config->pix_fmt;
+  //     frames_ctx->sw_format = AV_PIX_FMT_YUV420P;  // 输入格式
+  //     frames_ctx->width = width;
+  //     frames_ctx->height = height;
+  //     frames_ctx->initial_pool_size = 20;  // 设置初始池大小
 
-      // 初始化硬件帧上下文
-      ret = av_hwframe_ctx_init(hw_frames_ctx_raw);
-      if (ret < 0) {
-        char errbuf[AV_ERROR_MAX_STRING_SIZE];
-        av_strerror(ret, errbuf, AV_ERROR_MAX_STRING_SIZE);
-        RTC_LOG(LS_WARNING)
-            << "Failed to initialize hardware frames context for " << codec_name
-            << ". Error: " << errbuf;
-        hw_frames_ctx_.reset();
-        hw_device_ctx_.reset();
-        continue;
-      }
+  //     // 初始化硬件帧上下文
+  //     ret = av_hwframe_ctx_init(hw_frames_ctx_raw);
+  //     if (ret < 0) {
+  //       char errbuf[AV_ERROR_MAX_STRING_SIZE];
+  //       av_strerror(ret, errbuf, AV_ERROR_MAX_STRING_SIZE);
+  //       RTC_LOG(LS_WARNING)
+  //           << "Failed to initialize hardware frames context for " <<
+  //           codec_name
+  //           << ". Error: " << errbuf;
+  //       hw_frames_ctx_.reset();
+  //       hw_device_ctx_.reset();
+  //       continue;
+  //     }
 
-      // 设置编码器上下文的硬件帧上下文
-      codec_context_->hw_frames_ctx = av_buffer_ref(hw_frames_ctx_raw);
+  //     // 设置编码器上下文的硬件帧上下文
+  //     codec_context_->hw_frames_ctx = av_buffer_ref(hw_frames_ctx_raw);
 
-      RTC_LOG(LS_INFO) << "Hardware contexts initialized successfully for "
-                       << codec_name << " (device: "
-                       << av_hwdevice_get_type_name(hw_device_type)
-                       << ", format: " << av_get_pix_fmt_name(config->pix_fmt)
-                       << ")";
-    } else {
-      // 软件编码器或混合编码器
-      if (codec->capabilities & AV_CODEC_CAP_HYBRID) {
-        RTC_LOG(LS_DEBUG) << "Hybrid encoder detected (has hardware "
-                             "acceleration but may fallback to software). "
-                          << "Treating as software encoder for compatibility.";
-      } else {
-        RTC_LOG(LS_DEBUG) << "Software encoder selected.";
-      }
-      codec_context_->pix_fmt = AV_PIX_FMT_YUV420P;
-    }
+  //     RTC_LOG(LS_INFO) << "Hardware contexts initialized successfully for "
+  //                      << codec_name << " (device: "
+  //                      << av_hwdevice_get_type_name(hw_device_type)
+  //                      << ", format: " <<
+  //                      av_get_pix_fmt_name(config->pix_fmt)
+  //                      << ")";
+  //   } else {
+  //     // 软件编码器或混合编码器
+  //     if (codec->capabilities & AV_CODEC_CAP_HYBRID) {
+  //       RTC_LOG(LS_DEBUG) << "Hybrid encoder detected (has hardware "
+  //                            "acceleration but may fallback to software). "
+  //                         << "Treating as software encoder for
+  //                         compatibility.";
+  //     } else {
+  //       RTC_LOG(LS_DEBUG) << "Software encoder selected.";
+  //     }
+  //     codec_context_->pix_fmt = AV_PIX_FMT_YUV420P;
+  //   }
 
-    RTC_LOG(LS_DEBUG) << "Codec context setup - Width: "
-                      << codec_context_->width
-                      << ", Height: " << codec_context_->height
-                      << ", Bitrate: " << codec_context_->bit_rate
-                      << ", Timebase: " << codec_context_->time_base.num << "/"
-                      << codec_context_->time_base.den
-                      << ", Framerate: " << codec_context_->framerate.num << "/"
-                      << codec_context_->framerate.den
-                      << ", GOP size: " << codec_context_->gop_size
-                      << ", PixFmt: "
-                      << av_get_pix_fmt_name(codec_context_->pix_fmt);
+  //   RTC_LOG(LS_DEBUG) << "Codec context setup - Width: "
+  //                     << codec_context_->width
+  //                     << ", Height: " << codec_context_->height
+  //                     << ", Bitrate: " << codec_context_->bit_rate
+  //                     << ", Timebase: " << codec_context_->time_base.num <<
+  //                     "/"
+  //                     << codec_context_->time_base.den
+  //                     << ", Framerate: " << codec_context_->framerate.num <<
+  //                     "/"
+  //                     << codec_context_->framerate.den
+  //                     << ", GOP size: " << codec_context_->gop_size
+  //                     << ", PixFmt: "
+  //                     << av_get_pix_fmt_name(codec_context_->pix_fmt);
 
-    // 在设置完通用参数后，为特定编码器添加选项
-    if (strcmp(codec_name, "h264_qsv") == 0) {
-      // QSV特定的配置
-      av_opt_set(codec_context_->priv_data, "preset", "veryfast", 0);
-      av_opt_set(codec_context_->priv_data, "low_power", "0", 0);  // 性能模式
-      av_opt_set(codec_context_->priv_data, "async_depth", "1",
-                 0);  // 降低异步深度
-      av_opt_set(codec_context_->priv_data, "idr_interval", "0",
-                 0);  // 禁用IDR间隔
-      // 尝试设置QSV特定的设备参数
-      av_opt_set(codec_context_->priv_data, "gpu_copy", "on", 0);
-    } else if (strcmp(codec_name, "h264_nvenc") == 0) {
-      // NVENC特定的配置
-      av_opt_set(codec_context_->priv_data, "preset", "fast", 0);
-      av_opt_set(codec_context_->priv_data, "rc", "cbr", 0);  // 恒定码率
-    } else if (strcmp(codec_name, "h264_vaapi") == 0) {
-      // VAAPI特定的配置
-      av_opt_set(codec_context_->priv_data, "low_power", "0", 0);
-    }
+  //   // 在设置完通用参数后，为特定编码器添加选项
+  //   if (strcmp(codec_name, "h264_qsv") == 0) {
+  //     // QSV特定的配置
+  //     av_opt_set(codec_context_->priv_data, "preset", "veryfast", 0);
+  //     av_opt_set(codec_context_->priv_data, "low_power", "0", 0);  //
+  //     性能模式 av_opt_set(codec_context_->priv_data, "async_depth", "1",
+  //                0);  // 降低异步深度
+  //     av_opt_set(codec_context_->priv_data, "idr_interval", "0",
+  //                0);  // 禁用IDR间隔
+  //     // 尝试设置QSV特定的设备参数
+  //     av_opt_set(codec_context_->priv_data, "gpu_copy", "on", 0);
+  //   } else if (strcmp(codec_name, "h264_nvenc") == 0) {
+  //     // NVENC特定的配置
+  //     av_opt_set(codec_context_->priv_data, "preset", "fast", 0);
+  //     av_opt_set(codec_context_->priv_data, "rc", "cbr", 0);  // 恒定码率
+  //   } else if (strcmp(codec_name, "h264_vaapi") == 0) {
+  //     // VAAPI特定的配置
+  //     av_opt_set(codec_context_->priv_data, "low_power", "0", 0);
+  //   }
 
-    codec_context_->flags |= AV_CODEC_FLAG_GLOBAL_HEADER;
-    int open_result = avcodec_open2(codec_context_.get(), codec, nullptr);
-    if (open_result >= 0) {
-      RTC_LOG(LS_INFO) << "Successfully opened encoder: " << codec_name;
-      encoder_found = true;
-      break;
-    } else {
-      char errbuf[AV_ERROR_MAX_STRING_SIZE];
-      av_strerror(open_result, errbuf, AV_ERROR_MAX_STRING_SIZE);
-      RTC_LOG(LS_WARNING) << "Failed to open codec '" << codec_name
-                          << "'. Error: " << errbuf << " (code: " << open_result
-                          << ")";
-      if (strcmp(codec_name, "h264_qsv") == 0) {
-        RTC_LOG(LS_WARNING) << "QSV encoder failed. This may be due to missing "
-                               "Intel graphics drivers, "
-                            << "incompatible hardware, or QSV not being "
-                               "supported on this system. "
-                            << "Consider updating Intel graphics drivers or "
-                               "using software encoding.";
-      }
-      codec_context_.reset();  // 释放上下文，尝试下一个
-    }
-  }
+  //   codec_context_->flags |= AV_CODEC_FLAG_GLOBAL_HEADER;
+  //   int open_result = avcodec_open2(codec_context_.get(), codec, nullptr);
+  //   if (open_result >= 0) {
+  //     RTC_LOG(LS_INFO) << "Successfully opened encoder: " << codec_name;
+  //     encoder_found = true;
+  //     break;
+  //   } else {
+  //     char errbuf[AV_ERROR_MAX_STRING_SIZE];
+  //     av_strerror(open_result, errbuf, AV_ERROR_MAX_STRING_SIZE);
+  //     RTC_LOG(LS_WARNING) << "Failed to open codec '" << codec_name
+  //                         << "'. Error: " << errbuf << " (code: " <<
+  //                         open_result
+  //                         << ")";
+  //     if (strcmp(codec_name, "h264_qsv") == 0) {
+  //       RTC_LOG(LS_WARNING) << "QSV encoder failed. This may be due to
+  //       missing "
+  //                              "Intel graphics drivers, "
+  //                           << "incompatible hardware, or QSV not being "
+  //                              "supported on this system. "
+  //                           << "Consider updating Intel graphics drivers or "
+  //                              "using software encoding.";
+  //     }
+  //     codec_context_.reset();  // 释放上下文，尝试下一个
+  //   }
+  // }
 
   // 如果所有硬件编码器都失败，尝试回退到 libx264
   if (!encoder_found) {

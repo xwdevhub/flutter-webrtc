@@ -3,7 +3,6 @@
 #include <cmath>
 #include <fstream>
 #include <memory>
-#include "flutter_webrtc_logging.h"
 
 #ifdef _WIN32
 #include <windows.h>
@@ -18,6 +17,9 @@ extern "C" {
 #include <libavutil/avutil.h>
 #include <libavutil/mem.h>
 }
+
+#include "flutter_webrtc_logging.h"
+#include "utils.h"
 
 namespace {
 
@@ -157,9 +159,18 @@ void MP4Muxer::Mux(const AudioFormat& audio_format,
                    OnSuccessCallback on_success,
                    OnFailureCallback on_failure) {
   try {
-    // 打开临时文件
+// 打开临时文件
+#if defined(WIN32) || defined(_WINDOWS)
+    std::wstring waudio_path = utf8_to_wstring(audio_tmp_path);
+    std::wstring wvideo_path = utf8_to_wstring(video_tmp_path);
+    std::filesystem::path audio_path(waudio_path);
+    std::filesystem::path video_path(wvideo_path);
+    std::ifstream audio_file(audio_path, std::ios::binary);
+    std::ifstream video_file(video_path, std::ios::binary);
+#else
     std::ifstream audio_file(audio_tmp_path, std::ios::binary);
     std::ifstream video_file(video_tmp_path, std::ios::binary);
+#endif
 
     if (!audio_file.is_open()) {
       on_failure("Failed to open audio temp file: " + audio_tmp_path);
@@ -468,7 +479,7 @@ void MP4Muxer::WritePacket(AVFormatContext* format_context,
     converted_pts = 0;
   }
 
-    RTC_LOG(LS_INFO) << "Writing packet with time_base=" << stream->time_base.num
+  RTC_LOG(LS_INFO) << "Writing packet with time_base=" << stream->time_base.num
                    << "/" << stream->time_base.den
                    << ", timestamp=" << packet.timestamp
                    << ", pts=" << converted_pts

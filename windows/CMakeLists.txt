@@ -36,6 +36,8 @@ add_library(${PLUGIN_NAME} SHARED
   "../common/cpp/src/recording/task_thread.cc"
 )
 
+target_compile_options(${PLUGIN_NAME} PRIVATE /utf-8)
+
 include_directories(
   "${CMAKE_CURRENT_SOURCE_DIR}"
   "${CMAKE_CURRENT_SOURCE_DIR}/../common/cpp/include"

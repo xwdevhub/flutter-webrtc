@@ -4,13 +4,16 @@
 #include <climits>
 #include <cmath>
 #include <cstdint>
+#include <filesystem>
 #include <fstream>
 #include <iostream>
 #include <thread>
+
 #include "flutter_peerconnection.h"
 #include "flutter_webrtc_base.h"
 #include "flutter_webrtc_logging.h"
 #include "rtc_resampler.h"
+#include "utils.h"
 
 namespace flutter_webrtc_plugin {
 
@@ -433,8 +436,16 @@ bool FlutterAudioRecorder::Start(const std::string& filepath) {
     if (output_file_.is_open()) {
       output_file_.close();
     }
+
+#if defined(WIN32) || defined(_WINDOWS)
+    std::wstring wpath = utf8_to_wstring(filepath);
+    std::filesystem::path path(wpath);
+    output_file_.open(path, std::ios::binary | std::ios::out | std::ios::app);
+#else
     output_file_.open(filepath,
                       std::ios::binary | std::ios::out | std::ios::app);
+#endif
+
     if (!output_file_.is_open()) {
       return false;
     }
