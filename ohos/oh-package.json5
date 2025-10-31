@@ -7,7 +7,8 @@
   "license": "Apache-2.0",
   "dependencies": {
     "@ohos/flutter_ohos": "file:./har/flutter.har",
-    "@xw/webrtc": "^1.0.0-rc4"
+    // "@xw/webrtc": "file:C:\\dev\\WEBRTC\\ohos_webrtc\\sdk\\ohos\\har_hap\\ohos_webrtc\\build\\default\\outputs\\default\\ohos_webrtc.har"
+    "@xw/webrtc": "^1.0.0-rc5"
   },
   "devDependencies": {},
   "dynamicDependencies": {}
