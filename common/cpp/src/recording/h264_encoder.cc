@@ -1,5 +1,12 @@
 #include "h264_encoder.h"
+
 #include "flutter_webrtc_logging.h"
+
+#ifdef _WIN32
+#include <windows.h>
+
+#include <VersionHelpers.h>
+#endif
 
 extern "C" {
 #include <libavutil/pixdesc.h>
@@ -324,9 +331,13 @@ bool H264Encoder::InitializeEncoder(int width, int height) {
     // 设置软件编码器优化
     // 使用CRF代替固定比特率，数值越小质量越高 (例如 18-22)
     av_opt_set(codec_context_->priv_data, "crf", "20", 0);
-    // 可选参数: ultrafast, superfastm, veryfast, faster, fast, medium, slow,
+    // 可选参数: ultrafast, superfast, veryfast, faster, fast, medium, slow,
     // slower, veryslow, placebo
-    av_opt_set(codec_context_->priv_data, "preset", "slow", 0);
+    if (IsWindows10OrGreater()) {
+      av_opt_set(codec_context_->priv_data, "preset", "slow", 0);
+    } else {
+      av_opt_set(codec_context_->priv_data, "preset", "ultrafast", 0);
+    }
     av_opt_set(codec_context_->priv_data, "tune", "zerolatency", 0);
     // 可选参数: baseline, main, high, high10, high422, high444
     av_opt_set(codec_context_->priv_data, "profile", "high", 0);
