@@ -417,17 +417,17 @@ bool FlutterAudioRecorder::Start(const std::string& filepath) {
   local_track_context_ = std::make_shared<TrackContext>("local");
 
   // 远程所有音轨
-  // for (const auto& [id, observer] : base_->peerconnection_observers_) {
-  //   const auto& streams = observer->RemoteStreams();
-  //   for (const auto& [_, stream] : streams) {
-  //     auto audio_tracks = stream->audio_tracks().std_vector();
-  //     for (const auto& track : audio_tracks) {
-  //       if (track && track->kind().std_string() == "audio") {
-  //         AddAudioTrack(static_cast<libwebrtc::RTCAudioTrack*>(track.get()));
-  //       }
-  //     }
-  //   }
-  // }
+  for (const auto& [id, observer] : base_->peerconnection_observers_) {
+    const auto& streams = observer->RemoteStreams();
+    for (const auto& [_, stream] : streams) {
+      auto audio_tracks = stream->audio_tracks().std_vector();
+      for (const auto& track : audio_tracks) {
+        if (track && track->kind().std_string() == "audio") {
+          AddAudioTrack(static_cast<libwebrtc::RTCAudioTrack*>(track.get()));
+        }
+      }
+    }
+  }
 
   {
     std::lock_guard<std::mutex> lock(output_file_mutex_);
