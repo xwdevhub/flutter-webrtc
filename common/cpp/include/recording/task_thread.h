@@ -105,7 +105,8 @@ class TaskThread {
    */
   std::thread::id GetThreadId() const;
 
-  std::unique_ptr<ThreadQueue<std::unique_ptr<ITask>>> queue_;
+  std::unique_ptr<ThreadQueue<std::unique_ptr<ITask>>> queue_ =
+      std::make_unique<ThreadQueue<std::unique_ptr<ITask>>>(std::numeric_limits<size_t>::max());
 
  private:
   // 线程的主执行函数
