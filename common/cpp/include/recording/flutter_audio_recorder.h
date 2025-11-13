@@ -129,12 +129,14 @@ class FlutterAudioRecorder : public FlutterRecorderInterface,
   std::shared_mutex contexts_mutex_;
 
   std::unique_ptr<TaskThread> producer_thread_;
+  std::shared_mutex producer_thread_mutex_;
 
   // 本地音轨数据
   std::shared_ptr<TrackContext> local_track_context_;
 
   // 空包音频数据，其pts作为主时钟
-  std::shared_ptr<TrackContext> base_track_context_;
+  std::unique_ptr<TrackContext> base_track_context_;
+  // std::shared_mutex base_track_mutex_;
   Timer base_track_timer_;
 
   std::thread process_thread_;
