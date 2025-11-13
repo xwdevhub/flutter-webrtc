@@ -114,11 +114,12 @@ void FlutterAudioRecorder::OnProcessedData(
   const int16_t* samples = audio_data;
   size_t input_samples = number_of_frames * number_of_channels;
 
-  int64_t timestamp = timestamp = local_track_context_->CalculateTimestamp(
+  std::shared_ptr<TrackContext> local_track_context = local_track_context_;
+  int64_t timestamp = timestamp = local_track_context->CalculateTimestamp(
       current_frame_arrival_timestamp, media_recorder_->start_timestamp_,
       media_recorder_->pause_elapsed_ts_);
   std::shared_ptr<ThreadQueue<AudioFrame>> frame_queue =
-      local_track_context_->frame_queue;
+      local_track_context->frame_queue;
 
   std::vector<int16_t> resampled_buffer;
 
@@ -132,10 +133,10 @@ void FlutterAudioRecorder::OnProcessedData(
   } else {
     libwebrtc::scoped_refptr<libwebrtc::RTCResampler> resampler;
 
-    if (!local_track_context_->resampler) {
-      local_track_context_->resampler = libwebrtc::RTCResampler::Create();
+    if (!local_track_context->resampler) {
+      local_track_context->resampler = libwebrtc::RTCResampler::Create();
     }
-    resampler = local_track_context_->resampler;
+    resampler = local_track_context->resampler;
 
     if (!resampler) {
       return;
@@ -166,12 +167,18 @@ void FlutterAudioRecorder::OnProcessedData(
     resampled_buffer.resize(dst_samples_per_channel * audio_format_.channels);
   }
 
-  producer_thread_->PostTask([frame_queue, timestamp,
-                              resampled_buffer =
-                                  std::move(resampled_buffer)]() mutable {
-    RTC_LOG(LS_INFO) << "local audio frame queue size: " << frame_queue->Size();
-    frame_queue->Push(AudioFrame{timestamp, std::move(resampled_buffer)});
-  });
+  {
+    std::shared_lock<std::shared_mutex> lock(producer_thread_mutex_);
+    if (producer_thread_) {
+      producer_thread_->PostTask([frame_queue, timestamp,
+                                  resampled_buffer =
+                                      std::move(resampled_buffer)]() mutable {
+        // RTC_LOG(LS_INFO) << "local audio frame queue size: "
+        //                  << frame_queue->Size();
+        frame_queue->Push(AudioFrame{timestamp, std::move(resampled_buffer)});
+      });
+    }
+  }
 }
 
 void FlutterAudioRecorder::OnData(const void* audio_data,
@@ -193,6 +200,9 @@ void FlutterAudioRecorder::OnData(const void* audio_data,
           number_of_frames * number_of_channels);
 
   // 拷贝数据到任务线程处理，避免阻塞音频线程
+  std::shared_lock<std::shared_mutex> lock(producer_thread_mutex_);
+  if (!producer_thread_)
+    return;
   producer_thread_->PostTask([this,
                               audio_data_copy = std::move(audio_data_copy),
                               sample_rate, number_of_channels, number_of_frames,
@@ -274,8 +284,8 @@ void FlutterAudioRecorder::OnData(const void* audio_data,
       resampled_buffer.resize(dst_samples_per_channel * audio_format_.channels);
     }
 
-    RTC_LOG(LS_INFO) << "remote audio frame queue size: "
-                     << frame_queue->Size();
+    // RTC_LOG(LS_INFO) << "remote audio frame queue size: "
+    //                  << frame_queue->Size();
     frame_queue->Push(AudioFrame{timestamp, std::move(resampled_buffer)});
   });
 }
@@ -297,6 +307,7 @@ void FlutterAudioRecorder::ProcessThread() {
     if (state_.load() == RecordingState::kStopped)
       RTC_LOG(LS_INFO) << "Drain Consumer ...";
 
+    RTC_LOG(LS_INFO) << "will check pause";
     // --- 暂停处理逻辑 ---
     {
       std::unique_lock<std::mutex> lock(state_mutex_);
@@ -310,6 +321,7 @@ void FlutterAudioRecorder::ProcessThread() {
         return state_.load() != RecordingState::kPaused;
       });
     }
+    RTC_LOG(LS_INFO) << "did check pause";
 
     // 如果线程被唤醒后发现状态是 Stopped 且所有队列都为空，则退出循环
     if (state_.load() == RecordingState::kStopped && AreAllQueuesEmpty()) {
@@ -320,6 +332,7 @@ void FlutterAudioRecorder::ProcessThread() {
     // 清空上次使用的数据
     track_data_buffer.clear();
 
+    RTC_LOG(LS_INFO) << "will add all process audio context";
     std::vector<std::shared_ptr<TrackContext>> all_contexts;
     all_contexts.reserve(remote_track_contexts_.size() + 1);
     all_contexts.push_back(local_track_context_);
@@ -329,19 +342,26 @@ void FlutterAudioRecorder::ProcessThread() {
         all_contexts.push_back(context);
       }
     }
+    RTC_LOG(LS_INFO) << "did add all process audio context";
 
     {
+      std::shared_lock<std::shared_mutex> lock(base_track_mutex_);
       if (!base_track_context_) {
+        RTC_LOG(LS_INFO) << "base audio track context not initial";
+        std::this_thread::sleep_for(std::chrono::milliseconds(10));
         continue;
       }
+      // RTC_LOG(LS_INFO) << "will pop base audio frame, size="
+      //                  << base_track_context_->frame_queue->Size();
       auto [audio_frame, _] = base_track_context_->frame_queue->Pop();
       if (!audio_frame) {
         // 不可能执行到这里，base track timer 是在消费者线程结束后才停止的
-        RTC_LOG(LS_INFO) << "base track timer is closed";
         continue;
       }
       target_pts = audio_frame->timestamp;
       track_data_buffer.push_back(audio_frame->data);
+      // RTC_LOG(LS_INFO) << "did pop base audio frame, size="
+      //                  << base_track_context_->frame_queue->Size();
     }
 
     for (auto& context : all_contexts) {
@@ -383,7 +403,9 @@ void FlutterAudioRecorder::ProcessThread() {
     //                  mixed_data_buffer.size() * sizeof(int16_t));
     // }
 
+    RTC_LOG(LS_INFO) << "will encode audio frame";
     EncodeAudioFrame(target_pts, mixed_data_buffer);
+    RTC_LOG(LS_INFO) << "did encode audio frame";
   }
 
   RTC_LOG(LS_INFO) << "Audio Process thread stopped.";
@@ -461,14 +483,18 @@ bool FlutterAudioRecorder::Start(const std::string& filepath) {
   // 启动混音线程
   process_thread_ = std::thread(&FlutterAudioRecorder::ProcessThread, this);
 
-  producer_thread_ = std::make_unique<TaskThread>("audio data producer thread");
+  {
+    std::unique_lock<std::shared_mutex> lock(producer_thread_mutex_);
+    producer_thread_ =
+        std::make_unique<TaskThread>("audio data producer thread");
+  }
 
   // 添加本地音频数据源
   base_->factory_->RegisterLocalAudioTrackObserver(this);
 
   // 添加所有音轨的sink
   std::shared_lock<std::shared_mutex> contexts_lock(contexts_mutex_);
-  RTC_LOG(LS_INFO) << "远程音轨数量=" << remote_track_contexts_.size();
+  // RTC_LOG(LS_INFO) << "远程音轨数量=" << remote_track_contexts_.size();
   for (auto& [_, context] : remote_track_contexts_) {
     if (context && context->track) {
       context->track->AddSink(this);
@@ -476,8 +502,13 @@ bool FlutterAudioRecorder::Start(const std::string& filepath) {
   }
 
   // 开启空音频定时器
-  base_track_context_ = std::make_shared<TrackContext>("base");
-  base_track_timer_.Start(10, [this]() { BaseTrackTimerCallback(); });
+  {
+    std::unique_lock<std::shared_mutex> lock(base_track_mutex_);
+    base_track_context_ = std::make_unique<TrackContext>("base");
+    base_track_timer_.Start(10, [this]() { BaseTrackTimerCallback(); });
+  }
+
+  RTC_LOG(LS_INFO) << "audio recorder start end";
   return true;
 }
 
@@ -514,11 +545,14 @@ void FlutterAudioRecorder::Stop() {
   // producer_thread_->Stop() 会阻塞，直到所有已提交的任务
   // (即所有 Push 到 Jitter Buffer 的操作) 都完成。
   // 当 Stop() 返回时，我们可以确信 Jitter Buffer 不会再有任何新数据进入。
-  if (producer_thread_) {
-    RTC_LOG(LS_INFO) << "Stopping audio producer thread...";
-    producer_thread_->Stop();
-    producer_thread_.reset();
-    RTC_LOG(LS_INFO) << "Producer audio thread has stopped.";
+  {
+    std::unique_lock<std::shared_mutex> lock(producer_thread_mutex_);
+    if (producer_thread_) {
+      RTC_LOG(LS_INFO) << "Stopping audio producer thread...";
+      producer_thread_->Stop();
+      producer_thread_.reset();
+      RTC_LOG(LS_INFO) << "Producer audio thread has stopped.";
+    }
   }
 
   // --- 阶段 4: 排空消费者 (Drain Consumer) ---
@@ -540,9 +574,13 @@ void FlutterAudioRecorder::Stop() {
   RTC_LOG(LS_INFO) << "audio Process thread has joined.";
 
   // 等待消费者线程退出，才能停止生产空包
-  base_track_context_->frame_queue->Clear();
-  base_track_timer_.Stop();
-  RTC_LOG(LS_INFO) << "Base track timer has stopped.";
+  {
+    std::unique_lock<std::shared_mutex> lock(base_track_mutex_);
+    base_track_context_->frame_queue->Clear();
+    base_track_context_.reset();
+    base_track_timer_.Stop();
+    RTC_LOG(LS_INFO) << "Base track timer has stopped.";
+  }
 
   // --- 阶段 6: 清理 (Cleanup) ---
   // 此刻，所有线程都已停止，可以安全地清理剩余资源。
@@ -632,7 +670,8 @@ void FlutterAudioRecorder::OnRemoveTrack(libwebrtc::RTCMediaTrack* track) {
 }
 
 bool FlutterAudioRecorder::AreAllQueuesEmpty() {
-  if (local_track_context_ && !local_track_context_->frame_queue->IsEmpty()) {
+  std::shared_ptr<TrackContext> locacl_track_context = local_track_context_;
+  if (locacl_track_context && !locacl_track_context->frame_queue->IsEmpty()) {
     return false;
   }
 
@@ -655,6 +694,10 @@ void FlutterAudioRecorder::BaseTrackTimerCallback() {
           std::chrono::steady_clock::now().time_since_epoch())
           .count();
 
+  std::shared_lock<std::shared_mutex> lock(base_track_mutex_);
+  if (!base_track_context_)
+    return;
+
   int64_t timestamp = base_track_context_->CalculateTimestamp(
       current_frame_arrival_timestamp, media_recorder_->start_timestamp_,
       media_recorder_->pause_elapsed_ts_);
@@ -668,8 +711,8 @@ void FlutterAudioRecorder::BaseTrackTimerCallback() {
   // if (state_ != RecordingState::kRecording)
   //   return;
 
-  RTC_LOG(LS_DEBUG) << "base audio frame queue size: "
-                    << base_track_context_->frame_queue->Size();
+  // RTC_LOG(LS_DEBUG) << "base audio frame queue size: "
+  //                   << base_track_context_->frame_queue->Size();
   base_track_context_->frame_queue->Push(
       AudioFrame{timestamp, std::vector<int16_t>(smples_per_chunk, 0)});
 }

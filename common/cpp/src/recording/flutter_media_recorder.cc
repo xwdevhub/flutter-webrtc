@@ -51,7 +51,8 @@ void FlutterMediaRecorder::StartRecordToFile(
             if (!success) {
               char buffer[256];
               strerror_s(buffer, sizeof(buffer), errno);
-              result->Error("-1", "Failed to start audio recorder. filepath=" + audio_temp_path + ", error=" + buffer);
+              result->Error("-1", "Failed to start audio recorder. filepath=" +
+                                      audio_temp_path + ", error=" + buffer);
               return;
             }
           }
@@ -61,7 +62,8 @@ void FlutterMediaRecorder::StartRecordToFile(
             if (!success) {
               char buffer[256];
               strerror_s(buffer, sizeof(buffer), errno);
-              result->Error("-1", "Failed to start video recorder. filepath=" + audio_temp_path + ", error=" + buffer);
+              result->Error("-1", "Failed to start video recorder. filepath=" +
+                                      audio_temp_path + ", error=" + buffer);
               return;
             }
           }
