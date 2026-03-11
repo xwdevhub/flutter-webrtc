@@ -9,7 +9,7 @@
 #include "flutter_peerconnection.h"
 #include "flutter_screen_capture.h"
 #include "flutter_video_renderer.h"
-#include "flutter_media_recorder.h"
+#include "recording/flutter_media_recorder.h"
 
 #include "libwebrtc.h"
 

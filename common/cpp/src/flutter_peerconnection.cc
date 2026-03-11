@@ -6,7 +6,7 @@
 #include "rtc_dtmf_sender.h"
 #include "rtc_rtp_parameters.h"
 
-#include "flutter_remote_track_observer.h"
+#include "recording/flutter_remote_track_observer.h"
 
 namespace flutter_webrtc_plugin {
 

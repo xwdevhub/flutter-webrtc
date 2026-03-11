@@ -2,11 +2,23 @@
 #define FLUTTER_WEBRTC_MEDIA_RECORDER_HXX
 
 #include <memory>
+
 #include "flutter_webrtc_base.h"
+
+#if defined(_WIN32) || defined(_WINDOWS)
+#define FLUTTER_WEBRTC_ENABLE_LOCAL_RECORDING 1
+#else
+#define FLUTTER_WEBRTC_ENABLE_LOCAL_RECORDING 0
+#endif
+
+#if FLUTTER_WEBRTC_ENABLE_LOCAL_RECORDING
 #include "task_thread.h"
 #include "types.h"
+#endif
 
 namespace flutter_webrtc_plugin {
+
+#if FLUTTER_WEBRTC_ENABLE_LOCAL_RECORDING
 
 class FlutterRecorderInterface {
  public:
@@ -74,6 +86,32 @@ class FlutterMediaRecorder {
   std::unique_ptr<TaskThread> recording_thread_;
   std::unique_ptr<TaskThread> muxing_thread_;
 };
+
+#else
+
+class FlutterMediaRecorder {
+ public:
+  explicit FlutterMediaRecorder(FlutterWebRTCBase* /*base*/) {}
+
+  void StartRecordToFile(std::string /*filepath*/,
+                         std::unique_ptr<MethodResultProxy> result) {
+    result->Error("unsupported",
+                  "Local recording is only supported on Windows.");
+  }
+
+  void StopRecordToFile(std::unique_ptr<MethodResultProxy> result) {
+    result->Error("unsupported",
+                  "Local recording is only supported on Windows.");
+  }
+
+  void TransRecordToFile(std::string /*path*/,
+                         std::unique_ptr<MethodResultProxy> result) {
+    result->Error("unsupported",
+                  "Local recording is only supported on Windows.");
+  }
+};
+
+#endif
 
 }  // namespace flutter_webrtc_plugin
 
