@@ -1,0 +1,10 @@
+name: screenshot_subprocess
+description: >
+  HTTP server subprocess for the flutter-webrtc Linux screenshot plugin.
+  Captures the screen using scrot (X11) or grim/slurp (Wayland) and returns
+  the image bytes over a loopback HTTP API.
+version: 1.0.0
+publish_to: none
+
+environment:
+  sdk: '>=2.12.0 <3.0.0'
