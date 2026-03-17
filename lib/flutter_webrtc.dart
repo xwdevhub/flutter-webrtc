@@ -13,3 +13,6 @@ export 'src/native/rtc_video_renderer_impl.dart'
 export 'src/native/rtc_video_view_impl.dart'
     if (dart.library.html) 'src/web/rtc_video_view_impl.dart';
 export 'src/native/utils.dart' if (dart.library.html) 'src/web/utils.dart';
+export 'src/linux_screenshot.dart'
+    if (dart.library.html) 'src/linux_screenshot_stub.dart';
+export 'src/widgets/screenshot_overlay.dart';
