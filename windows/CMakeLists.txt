@@ -14,6 +14,8 @@ add_definitions(-DNOMINMAX)
 # C++ filesystem library support
 add_definitions(-D_SILENCE_CXX17_ITERATOR_DEPRECATION_WARNING)
 
+# add_compile_definitions(FLUTTER_WEBRTC_RENDERER_PERF)
+
 add_library(${PLUGIN_NAME} SHARED
   "../common/cpp/src/flutter_common.cc"
   "../common/cpp/src/flutter_data_channel.cc"

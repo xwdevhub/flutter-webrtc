@@ -57,6 +57,8 @@ class FlutterVideoRenderer
   mutable std::shared_ptr<uint8_t> rgb_buffer_;
   mutable std::mutex mutex_;
   RTCVideoFrame::VideoRotation rotation_ = RTCVideoFrame::kVideoRotation_0;
+  int64_t perf_e2e_sum_ms_ = 0;
+  int64_t perf_e2e_frame_count_ = 0;
 };
 
 class FlutterVideoRendererManager {

@@ -1,5 +1,40 @@
 #include "flutter_video_renderer.h"
 
+// ---------------------------------------------------------------------------
+// Perf instrumentation — enabled only when FLUTTER_WEBRTC_RENDERER_PERF is
+// defined (e.g. in your CMakeLists: add_compile_definitions(FLUTTER_WEBRTC_RENDERER_PERF)).
+// ---------------------------------------------------------------------------
+#if defined(FLUTTER_WEBRTC_RENDERER_PERF)
+#include <chrono>
+#include <cstdio>
+namespace {
+inline int64_t NowMs() {
+  using namespace std::chrono;
+  return duration_cast<milliseconds>(
+             steady_clock::now().time_since_epoch())
+      .count();
+}
+
+inline int64_t CurrentNtpMs() {
+  using namespace std::chrono;
+  constexpr int64_t kNtpJan1970Millisecs = 2208988800LL * 1000LL;
+  const int64_t unix_ms =
+      duration_cast<milliseconds>(system_clock::now().time_since_epoch())
+          .count();
+  return unix_ms + kNtpJan1970Millisecs;
+}
+}  // namespace
+#define RENDERER_PERF_LOG(msg) \
+  do { fprintf(stderr, "[RendererPerf] " msg "\n"); } while (0)
+#define RENDERER_PERF_LOGF(...) \
+  do { fprintf(stderr, "[RendererPerf] " __VA_ARGS__); fprintf(stderr, "\n"); } while (0)
+#else
+#define RENDERER_PERF_LOG(msg)    do {} while (0)
+#define RENDERER_PERF_LOGF(...)   do {} while (0)
+inline int64_t NowMs() { return 0; }
+inline int64_t CurrentNtpMs() { return 0; }
+#endif
+
 namespace flutter_webrtc_plugin {
 
 FlutterVideoRenderer::~FlutterVideoRenderer() {}
@@ -20,7 +55,13 @@ void FlutterVideoRenderer::initialize(
 const FlutterDesktopPixelBuffer* FlutterVideoRenderer::CopyPixelBuffer(
     size_t width,
     size_t height) const {
+#if defined(FLUTTER_WEBRTC_RENDERER_PERF)
+  const int64_t lock_start_ms = NowMs();
+#endif
   mutex_.lock();
+#if defined(FLUTTER_WEBRTC_RENDERER_PERF)
+  const int64_t mutex_wait_ms = NowMs() - lock_start_ms;
+#endif
   if (pixel_buffer_.get() && frame_.get()) {
     if (pixel_buffer_->width != frame_->width() ||
         pixel_buffer_->height != frame_->height()) {
@@ -31,9 +72,22 @@ const FlutterDesktopPixelBuffer* FlutterVideoRenderer::CopyPixelBuffer(
       pixel_buffer_->height = frame_->height();
     }
 
+#if defined(FLUTTER_WEBRTC_RENDERER_PERF)
+    const int64_t convert_start_ms = NowMs();
+    RENDERER_PERF_LOGF("CopyPixelBuffer start tex=%lld src=%dx%d req=%zux%zu mutex_wait_ms=%lld",
+        texture_id_, (int)pixel_buffer_->width, (int)pixel_buffer_->height,
+        width, height, mutex_wait_ms);
+#endif
+
     frame_->ConvertToARGB(RTCVideoFrame::Type::kABGR, rgb_buffer_.get(), 0,
                           static_cast<int>(pixel_buffer_->width),
                           static_cast<int>(pixel_buffer_->height));
+
+#if defined(FLUTTER_WEBRTC_RENDERER_PERF)
+    const int64_t copy_pixel_buffer_ms = NowMs() - convert_start_ms;
+    RENDERER_PERF_LOGF("CopyPixelBuffer done tex=%lld copy_ms=%lld",
+        texture_id_, copy_pixel_buffer_ms);
+#endif
 
     pixel_buffer_->buffer = rgb_buffer_.get();
     mutex_.unlock();
@@ -44,6 +98,34 @@ const FlutterDesktopPixelBuffer* FlutterVideoRenderer::CopyPixelBuffer(
 }
 
 void FlutterVideoRenderer::OnFrame(scoped_refptr<RTCVideoFrame> frame) {
+#if defined(FLUTTER_WEBRTC_RENDERER_PERF)
+  int64_t approx_e2e_ms = -1;
+  if (frame->ntp_time_ms() > 0) {
+    const int64_t now_ntp_ms = CurrentNtpMs();
+    if (now_ntp_ms >= frame->ntp_time_ms()) {
+      approx_e2e_ms = now_ntp_ms - frame->ntp_time_ms();
+      perf_e2e_sum_ms_ += approx_e2e_ms;
+      ++perf_e2e_frame_count_;
+    }
+  }
+
+  if (approx_e2e_ms >= 0) {
+    RENDERER_PERF_LOGF("OnFrame tex=%lld size=%dx%d rotation=%d approx_e2e_ms=%lld",
+        texture_id_, frame->width(), frame->height(), (int)frame->rotation(),
+        approx_e2e_ms);
+    if (perf_e2e_frame_count_ >= 30) {
+      RENDERER_PERF_LOGF(
+          "OnFrame avg tex=%lld avg_e2e_ms=%lld frames=%lld",
+          texture_id_, perf_e2e_sum_ms_ / perf_e2e_frame_count_,
+          perf_e2e_frame_count_);
+      perf_e2e_sum_ms_ = 0;
+      perf_e2e_frame_count_ = 0;
+    }
+  } else {
+    RENDERER_PERF_LOGF("OnFrame tex=%lld size=%dx%d rotation=%d",
+        texture_id_, frame->width(), frame->height(), (int)frame->rotation());
+  }
+#endif
   if (!first_frame_rendered) {
     EncodableMap params;
     params[EncodableValue("event")] = "didFirstFrameRendered";
