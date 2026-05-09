@@ -79,9 +79,19 @@ const FlutterDesktopPixelBuffer* FlutterVideoRenderer::CopyPixelBuffer(
         width, height, mutex_wait_ms);
 #endif
 
-    frame_->ConvertToARGB(RTCVideoFrame::Type::kABGR, rgb_buffer_.get(), 0,
-                          static_cast<int>(pixel_buffer_->width),
-                          static_cast<int>(pixel_buffer_->height));
+    const int converted_bytes = frame_->ConvertToARGB(
+        RTCVideoFrame::Type::kABGR, rgb_buffer_.get(), 0,
+        static_cast<int>(pixel_buffer_->width),
+        static_cast<int>(pixel_buffer_->height));
+    if (converted_bytes <= 0) {
+      RENDERER_PERF_LOGF(
+          "CopyPixelBuffer failed tex=%lld src=%dx%d req=%zux%zu",
+          texture_id_, (int)pixel_buffer_->width, (int)pixel_buffer_->height,
+          width, height);
+      pixel_buffer_->buffer = nullptr;
+      mutex_.unlock();
+      return nullptr;
+    }
 
 #if defined(FLUTTER_WEBRTC_RENDERER_PERF)
     const int64_t copy_pixel_buffer_ms = NowMs() - convert_start_ms;

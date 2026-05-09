@@ -7,6 +7,7 @@
 #include "rtc_video_frame.h"
 #include "rtc_video_renderer.h"
 
+#include <memory>
 #include <mutex>
 
 namespace flutter_webrtc_plugin {
@@ -54,7 +55,7 @@ class FlutterVideoRenderer
   scoped_refptr<RTCVideoFrame> frame_;
   std::unique_ptr<flutter::TextureVariant> texture_;
   std::shared_ptr<FlutterDesktopPixelBuffer> pixel_buffer_;
-  mutable std::shared_ptr<uint8_t> rgb_buffer_;
+  mutable std::unique_ptr<uint8_t[]> rgb_buffer_;
   mutable std::mutex mutex_;
   RTCVideoFrame::VideoRotation rotation_ = RTCVideoFrame::kVideoRotation_0;
 #if defined(FLUTTER_WEBRTC_RENDERER_PERF)
